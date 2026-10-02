@@ -10,7 +10,7 @@ Phase 7.5 Complete: Render Deployment Preparation & Blueprint
     2. Backend NestJS Web Service (`taskly-backend`, Node runtime, free plan, `rootDir: backend`).
     3. Frontend Vite Static Site (`taskly-frontend`, static runtime, `rootDir: frontend`, `staticPublishPath: ./dist`).
   - Automated database migration and generation pipeline:
-    - Build command: `npm install && npx prisma generate && npm run build`
+    - Build command: `npm install --include=dev && npm run build`
     - Start command: `npx prisma migrate deploy && npm run start:prod` (applies migrations at container boot before HTTP server starts, 100% compatible with Render Free Tier)
     - Health check endpoint: `/api/tasks`
   - Dynamic service linking via Render environment variables:
