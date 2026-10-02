@@ -1,19 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getTasks, addTask, updateTask, deleteTask } from './api';
+import {
+  getTasks,
+  addTask,
+  updateTask,
+  deleteTask,
+  getTags,
+  createTag,
+  updateTag,
+  deleteTag,
+} from './api';
 import KanbanBoard from './components/KanbanBoard';
 import TaskFilterBar from './components/TaskFilterBar';
 import TaskInsights from './components/TaskInsights';
 import TaskModal from './components/TaskModal';
+import TagManagerModal from './components/TagManagerModal';
 import {
   Task,
   TaskStatus,
   TaskPriority,
   CreateTaskInput,
   UpdateTaskInput,
+  Tag,
+  CreateTagInput,
+  UpdateTagInput,
 } from './types/task';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +37,9 @@ export default function App() {
     'ALL'
   );
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
+  const [tagFilter, setTagFilter] = useState<string | 'ALL'>('ALL');
 
-  // Modal state
+  // Modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     task: Task | null;
@@ -32,26 +47,27 @@ export default function App() {
     isOpen: false,
     task: null,
   });
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState<boolean>(false);
 
-  const fetchTasks = () => {
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
-    getTasks()
-      .then((res) => {
-        setTasks(res.data);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        console.error('Error fetching tasks:', err);
-        setError(
-          'Failed to connect to backend server. Make sure backend is running.'
-        );
-        setLoading(false);
-      });
+    try {
+      const [tasksRes, tagsRes] = await Promise.all([getTasks(), getTags()]);
+      setTasks(tasksRes.data);
+      setTags(tagsRes.data);
+    } catch (err: unknown) {
+      console.error('Error fetching data:', err);
+      setError(
+        'Failed to connect to backend server. Make sure backend is running.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchTasks();
+    fetchData();
   }, []);
 
   const handleModalSubmit = async (
@@ -141,18 +157,58 @@ export default function App() {
     }
   };
 
+  const handleCreateTag = async (
+    tagInput: CreateTagInput
+  ): Promise<Tag> => {
+    const res = await createTag(tagInput);
+    setTags((prev) => [...prev, res.data]);
+    return res.data;
+  };
+
+  const handleUpdateTag = async (
+    id: string,
+    tagInput: UpdateTagInput
+  ): Promise<void> => {
+    const res = await updateTag(id, tagInput);
+    setTags((prev) => prev.map((t) => (t.id === id ? res.data : t)));
+    // Also update tag info in existing tasks
+    setTasks((prev) =>
+      prev.map((task) => ({
+        ...task,
+        tags: task.tags?.map((t) => (t.id === id ? res.data : t)),
+      }))
+    );
+  };
+
+  const handleDeleteTag = async (id: string): Promise<void> => {
+    await deleteTag(id);
+    setTags((prev) => prev.filter((t) => t.id !== id));
+    if (tagFilter === id) {
+      setTagFilter('ALL');
+    }
+    // Also remove tag from existing tasks in state
+    setTasks((prev) =>
+      prev.map((task) => ({
+        ...task,
+        tags: task.tags?.filter((t) => t.id !== id),
+      }))
+    );
+  };
+
   const handleClearFilters = () => {
     setSearchQuery('');
     setPriorityFilter('ALL');
     setStatusFilter('ALL');
+    setTagFilter('ALL');
   };
 
   const isFiltered =
     searchQuery.trim() !== '' ||
     priorityFilter !== 'ALL' ||
-    statusFilter !== 'ALL';
+    statusFilter !== 'ALL' ||
+    tagFilter !== 'ALL';
 
-  // Client-side filtering logic
+  // Client-side filtering logic with consistent AND logic
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
       // Search by title (case-insensitive)
@@ -173,9 +229,16 @@ export default function App() {
         return false;
       }
 
+      // Filter by tag (AND logic)
+      if (tagFilter !== 'ALL') {
+        if (!task.tags || !task.tags.some((t) => t.id === tagFilter)) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [tasks, searchQuery, priorityFilter, statusFilter]);
+  }, [tasks, searchQuery, priorityFilter, statusFilter, tagFilter]);
 
   const todoCount = tasks.filter((t) => t.status === 'TODO').length;
   const inProgressCount = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
@@ -222,7 +285,7 @@ export default function App() {
             <span>{error}</span>
             <div className="flex items-center gap-2">
               <button
-                onClick={fetchTasks}
+                onClick={fetchData}
                 className="text-xs bg-red-100 hover:bg-red-200 px-2.5 py-1 rounded font-semibold text-red-800 cursor-pointer"
               >
                 Retry
@@ -246,6 +309,10 @@ export default function App() {
           onPriorityChange={setPriorityFilter}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          tagFilter={tagFilter}
+          onTagChange={setTagFilter}
+          tags={tags}
+          onOpenTagManager={() => setIsTagManagerOpen(true)}
           onClearFilters={handleClearFilters}
           onOpenCreateModal={() =>
             setModalState({ isOpen: true, task: null })
@@ -319,9 +386,24 @@ export default function App() {
           isOpen={modalState.isOpen}
           onClose={() => setModalState({ isOpen: false, task: null })}
           task={modalState.task}
+          availableTags={tags}
+          onQuickCreateTag={handleCreateTag}
           onSubmit={handleModalSubmit}
+        />
+
+        {/* Tag Manager Modal */}
+        <TagManagerModal
+          isOpen={isTagManagerOpen}
+          onClose={() => setIsTagManagerOpen(false)}
+          tags={tags}
+          onCreateTag={async (input) => {
+            await handleCreateTag(input);
+          }}
+          onUpdateTag={handleUpdateTag}
+          onDeleteTag={handleDeleteTag}
         />
       </div>
     </div>
   );
 }
+

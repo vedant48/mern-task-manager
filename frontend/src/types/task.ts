@@ -1,6 +1,23 @@
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt?: string;
+}
+
+export interface CreateTagInput {
+  name: string;
+  color?: string;
+}
+
+export interface UpdateTagInput {
+  name?: string;
+  color?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -8,6 +25,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string | null;
+  tags?: Tag[];
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +35,7 @@ export interface CreateTaskInput {
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
+  tagIds?: string[];
 }
 
 export interface UpdateTaskInput {
@@ -25,6 +44,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
+  tagIds?: string[];
 }
 
 export interface ApiResponse<T> {

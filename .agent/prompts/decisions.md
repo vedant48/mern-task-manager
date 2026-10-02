@@ -331,4 +331,37 @@ Adopt Option 3. Derive all analytics client-side using `useMemo`, render them vi
 - The UI remains snappy and desktop-class with instant metric reactivity.
 - Future phases (such as tag filtering) can seamlessly feed into the same computation without refactoring.
 
+---
+
+## Decision 12 — Normalized Tag Model with Implicit Many-to-Many Association in Prisma 7 and Multi-Filter Composition
+
+### Context
+Phase 7 introduces task tags, labels, and category management. Tasks need to support multiple customizable tags with unique names and color codes. The architecture requires a normalized Tag model in Prisma 7 with full CRUD REST APIs, database integrity (cascade disassociation on deletion), tag selection/creation in the task modal, color-coded badges on cards, and unified client-side filtering composed with existing search, status, and priority filters using consistent AND logic.
+
+### Options considered
+1. **Scalar Array of Strings on Task (`tags String[]`)**:
+   - Store tag names or JSON directly as an array column on the Task table.
+   - *Pros*: Quick schema definition.
+   - *Cons*: Denormalized, cannot enforce color consistency, renaming a tag requires migrating all tasks, and breaks normalization standards.
+2. **Normalized Tag Model with Implicit Many-to-Many Relation (Selected)**:
+   - Define a `Tag` model (`id` UUID, `name` unique string, `color` hex string with default `#3B82F6`, `createdAt` timestamp).
+   - Establish `tags Tag[]` on `Task` and `tasks Task[]` on `Tag`. Prisma generates the join table `_TagToTask` with PostgreSQL foreign key cascading on delete.
+   - Implement dedicated `TagsModule` (`/api/tags`) for tag CRUD with duplicate prevention (409 Conflict) and hex color validation.
+   - Update `TasksService` to validate tag IDs, include tags on retrieval, and connect/set associations during task creation/updates.
+   - Maintain client-side tag state, multi-tag filtering with AND logic, and lightweight modal management in the frontend without external state libraries.
+
+### Decision
+Adopt Option 2. Implement a normalized `Tag` model with Prisma 7 implicit many-to-many relationship, complete RESTful CRUD APIs, validated tag associations on tasks, color-coded UI badges, and integrated AND filtering in `TaskFilterBar`.
+
+### Reason
+- Preserves relational data integrity and 3rd normal form (3NF).
+- Allows renaming or recoloring tags without mutating task records.
+- Deleting a tag cleanly disassociates it from tasks via PostgreSQL foreign key cascade (`ON DELETE CASCADE`), ensuring zero orphaned join records.
+- Guarantees instant client-side tag filtering that smoothly intersects with search text, status, and priority filters.
+
+### Consequences
+- Migration `20261002205250_add_tags_model` created table `tags` and join table `_TagToTask`.
+- All task API responses include the `tags: Tag[]` relationship payload.
+- Deleting a tag immediately disassociates it from all affected tasks in the UI state and database without deleting the tasks themselves.
+
 

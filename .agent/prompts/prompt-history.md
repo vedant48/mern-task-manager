@@ -844,5 +844,116 @@ Phase 6 successfully implemented and verified. The TaskFlow interface now featur
 ### Next step
 Await user instruction for Phase 7: Task Tags, Labels & Category Management.
 
+---
+
+## Prompt 14 — Phase 7: Task Tags, Labels & Category Management
+
+### User instruction
+Proceed with Phase 7: Task Tags, Labels & Category Management.
+Goal: Extend the existing TaskFlow application with customizable task tags/labels while preserving all existing functionality.
+Requirements:
+1. Backend / Database: Extend Prisma Task model to support tags. Use Prisma 7.x only. Do NOT upgrade to Prisma 8. Prefer a normalized Tag model with id, name, color, createdAt. Establish Task <-> Tag relationship. Create a Prisma migration. Preserve existing Task fields and behavior. Do not modify or remove existing migrations. Maintain PostgreSQL integrity and Prisma 7 compatibility.
+2. API: Add REST APIs for tag management: GET /api/tags, POST /api/tags, PUT /api/tags/:id, DELETE /api/tags/:id. Extend task creation/update APIs so tasks can receive tags. Validation: tag name non-empty and trimmed, validate color format, prevent invalid tag IDs, continue using global ValidationPipe, continue using ParseUUIDPipe for UUID route parameters, preserve existing API error conventions.
+3. Frontend: Tag management UI, tag pills on TaskCard, tag selection inside TaskModal, ability to create/select/remove tags, color-coded tag pills, tag filtering in TaskFilterBar working together with search, priority filter, status filter using AND logic consistently.
+4. Architecture: Simple React state management, no Redux/Zustand/React Query, no external UI/chart libraries, preserve native HTML5 drag-and-drop, preserve 3-column Kanban, clean separation, light theme, do not redesign unrelated components.
+5. Backward compatibility: All existing functionality must continue working.
+6. Verification: npx prisma validate, npx prisma migrate status, npx prisma generate, npm run build (backend/frontend), npx tsc --noEmit, npm run lint. Live API tests (create, list, update, create task with tags, update task tags, retrieve task with tags, remove tags, delete tag where valid, invalid name/color/UUID, non-existent tag, duplicate tag). Frontend verification: pills render, modal selection/removal, filtering with AND logic, drag/drop, insights, no _id, no hardcoded backend URLs.
+7. Scope discipline: Inspect repository first, do not modify files outside scope, do not commit, do not modify Prisma from 7.x to 8.x.
+8. Documentation: Update status.md, decisions.md, prompt-history.md. Provide concise Phase 7 Verification Report. Do not commit.
+
+### Agent interpretation
+Implement Phase 7 end-to-end:
+1. Model normalized `Tag` and implicit many-to-many relationship with `Task` in `backend/prisma/schema.prisma`.
+2. Generate migration `20261002205250_add_tags_model` and apply it to PostgreSQL database `taskmanager` on port 5433 using Prisma 7.10.0 CLI.
+3. Generate updated Prisma Client v7.10.0.
+4. Extend `CreateTaskDto` and `UpdateTaskDto` with `@IsOptional() @IsArray() @IsUUID('4', { each: true }) tagIds?: string[]`.
+5. Update `TasksService` to validate tag IDs, include tags on queries, and manage relational connect/set mutations.
+6. Create `backend/src/tags/` module with DTOs, service (duplicate tag name prevention with 409 Conflict, hex color validation), controller with ParseUUIDPipe, and register in `AppModule`.
+7. Build backend and restart daemon on port 5000.
+8. Update frontend contracts (`task.ts`) and API client (`api.ts`).
+9. Build `TagManagerModal.tsx` for full tag CRUD.
+10. Update `TaskCard.tsx` with color-coded tag badges.
+11. Update `TaskModal.tsx` with tag toggle pills, clear action, and inline quick-tag creation.
+12. Update `TaskFilterBar.tsx` with tag filter dropdown and manage tags button.
+13. Update `App.tsx` state and memoized filter using consistent AND logic.
+14. Verify backend with Prisma CLI and build; verify frontend with `tsc --noEmit`, `build`, and `lint`.
+15. Execute comprehensive 17-point live API test suite against PostgreSQL backend.
+16. Update `.agent/` documentation suite. Do NOT commit.
+
+### Action taken
+1. Schema & Database Migration:
+   - Added `tags Tag[]` to `Task` model in `backend/prisma/schema.prisma`.
+   - Added `Tag` model (`id`, `name @unique`, `color @default("#3B82F6")`, `createdAt`, `tasks Task[]`, mapped to `tags`).
+   - Ran `npx prisma validate` -> valid.
+   - Ran `npx prisma migrate dev --name add_tags_model` -> created and applied migration `20261002205250_add_tags_model` establishing `tags` table and `_TagToTask` join table with foreign key cascade.
+   - Ran `npx prisma generate` -> Prisma Client v7.10.0 generated.
+   - Ran `npx prisma migrate status` -> 3 migrations up to date.
+2. Backend DTOs & Services:
+   - Updated `CreateTaskDto` and `UpdateTaskDto` with `tagIds?: string[]`.
+   - Updated `TasksService` (`findAll`, `findOne`, `create`, `update`) with `include: { tags: true }`, non-existent tag ID validation (400 Bad Request), and relational `connect` / `set`.
+   - Created `backend/src/tags/dto/create-tag.dto.ts` with trimmed non-empty name and hex color validation.
+   - Created `backend/src/tags/dto/update-tag.dto.ts`.
+   - Created `backend/src/tags/tags.service.ts` with duplicate tag conflict checks (409 Conflict) and CRUD methods.
+   - Created `backend/src/tags/tags.controller.ts` with `ParseUUIDPipe` and standard REST endpoints under `/tags`.
+   - Created `backend/src/tags/tags.module.ts` and registered in `AppModule`.
+   - Built backend with `nest build` and launched daemon on port 5000.
+3. Frontend Integration:
+   - Updated `frontend/src/types/task.ts` with `Tag`, `CreateTagInput`, `UpdateTagInput`, and extended `Task`, `CreateTaskInput`, `UpdateTaskInput`.
+   - Updated `frontend/src/api.ts` with `getTags`, `createTag`, `updateTag`, `deleteTag`.
+   - Created `frontend/src/components/TagManagerModal.tsx` for viewing, creating, editing, and deleting tags with curated color swatches and native color picker.
+   - Updated `frontend/src/components/TaskCard.tsx` with color-coded tag pills (subtle tint, border, and color dot).
+   - Updated `frontend/src/components/TaskModal.tsx` with interactive tag pills, toggle state, and quick-tag creator.
+   - Updated `frontend/src/components/TaskFilterBar.tsx` with tag selector dropdown and "Tags" manager button.
+   - Updated `frontend/src/App.tsx` with tags state, tag filter composition using AND logic, tag mutation handlers with task synchronizations, and modal wiring.
+4. Verification & Testing:
+   - Backend: `npx prisma validate`, `npx prisma migrate status`, `npx prisma generate`, `npm run build` all passed with code 0.
+   - Frontend: `npx tsc --noEmit` passed with 0 errors, `npm run build` passed in 1.55s, `npm run lint` passed with 0 errors.
+   - Executed live API test suite (`scratch/test_api.mjs`) verifying all 17 cases (empty listing, empty name rejection 400, invalid color rejection 400, invalid UUID rejection 400, non-existent UUID 404, tag creation 201, duplicate tag conflict 409, tag update 200, task creation with tags 201, non-existent tag UUID rejection 400, retrieve task with tags, update task tags, empty tags array removes all tags, tag delete 200, task cleanup 200).
+   - Verified zero occurrences of `_id` and zero hardcoded backend URLs.
+   - Confirmed Prisma version remained strictly pinned at 7.10.0 (no Prisma 8).
+   - Updated `.agent/status.md`, `.agent/prompts/decisions.md` (Decision 12), and `.agent/prompts/prompt-history.md`.
+
+### Files changed
+- `backend/prisma/schema.prisma` (modified)
+- `backend/prisma/migrations/20261002205250_add_tags_model/migration.sql` (created)
+- `backend/src/tasks/dto/create-task.dto.ts` (modified)
+- `backend/src/tasks/dto/update-task.dto.ts` (modified)
+- `backend/src/tasks/tasks.service.ts` (modified)
+- `backend/src/tags/dto/create-tag.dto.ts` (created)
+- `backend/src/tags/dto/update-tag.dto.ts` (created)
+- `backend/src/tags/tags.service.ts` (created)
+- `backend/src/tags/tags.controller.ts` (created)
+- `backend/src/tags/tags.module.ts` (created)
+- `backend/src/app.module.ts` (modified)
+- `frontend/src/types/task.ts` (modified)
+- `frontend/src/api.ts` (modified)
+- `frontend/src/components/TaskCard.tsx` (modified)
+- `frontend/src/components/TaskModal.tsx` (modified)
+- `frontend/src/components/TaskFilterBar.tsx` (modified)
+- `frontend/src/components/TagManagerModal.tsx` (created)
+- `frontend/src/App.tsx` (modified)
+- `.agent/status.md` (updated)
+- `.agent/prompts/decisions.md` (updated)
+- `.agent/prompts/prompt-history.md` (updated)
+
+### Verification
+Commands executed:
+- `npx prisma validate`: Schema is valid.
+- `npx prisma migrate status`: 3 migrations found, database schema up to date.
+- `npx prisma generate`: Generated Prisma Client (v7.10.0).
+- `npm run build` in `backend/`: Succeeded with code 0 (`nest build`).
+- `node scratch/test_api.mjs`: All 17 API scenarios verified against live PostgreSQL/NestJS.
+- `npx tsc --noEmit` in `frontend/`: Succeeded with code 0 (zero type errors).
+- `npm run build` in `frontend/`: Succeeded with code 0 in 1.55s.
+- `npm run lint` in `frontend/`: Succeeded with code 0 (`eslint .`).
+- `grep_search` for `_id` and `render.com`: 0 matches found.
+- `git status --short`: Verified all modified files are within Phase 7 scope; no commits created.
+
+### Result
+Phase 7 completed successfully. The application now fully supports customized task tags and labels with normalized PostgreSQL persistence, full REST APIs, modal tag selection, color-coded badges, and combined AND filtering across search, priority, status, and tags.
+
+### Next step
+Await user guidance / proceed to Phase 8.
+
 
 

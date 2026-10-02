@@ -25,8 +25,20 @@ model Task {
   status    TaskStatus   @default(TODO)
   priority  TaskPriority @default(MEDIUM)
   dueDate   DateTime?
+  tags      Tag[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
   @@map("tasks")
 }
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   @default("#3B82F6")
+  createdAt DateTime @default(now())
+  tasks     Task[]
+
+  @@map("tags")
+}
+

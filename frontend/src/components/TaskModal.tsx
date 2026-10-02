@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Task, TaskPriority, TaskStatus, CreateTaskInput, UpdateTaskInput } from '../types/task';
+import {
+  Task,
+  TaskPriority,
+  TaskStatus,
+  CreateTaskInput,
+  UpdateTaskInput,
+  Tag,
+  CreateTagInput,
+} from '../types/task';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task?: Task | null;
+  availableTags: Tag[];
+  onQuickCreateTag?: (tag: CreateTagInput) => Promise<Tag>;
   onSubmit: (data: CreateTaskInput | UpdateTaskInput) => Promise<void>;
 }
 
@@ -13,12 +23,17 @@ export default function TaskModal({
   isOpen,
   onClose,
   task,
+  availableTags,
+  onQuickCreateTag,
   onSubmit,
 }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [newQuickTagName, setNewQuickTagName] = useState('');
+  const [isCreatingQuickTag, setIsCreatingQuickTag] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,12 +45,15 @@ export default function TaskModal({
         setStatus(task.status);
         setPriority(task.priority);
         setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '');
+        setSelectedTagIds(task.tags ? task.tags.map((t) => t.id) : []);
       } else {
         setTitle('');
         setStatus('TODO');
         setPriority('MEDIUM');
         setDueDate('');
+        setSelectedTagIds([]);
       }
+      setNewQuickTagName('');
       setError(null);
     }
   }, [isOpen, task]);
@@ -52,6 +70,35 @@ export default function TaskModal({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const handleQuickAddTag = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const trimmed = newQuickTagName.trim();
+    if (!trimmed || !onQuickCreateTag) return;
+
+    setIsCreatingQuickTag(true);
+    try {
+      const created = await onQuickCreateTag({ name: trimmed });
+      setSelectedTagIds((prev) => [...prev, created.id]);
+      setNewQuickTagName('');
+    } catch (err: unknown) {
+      console.error('Quick create tag error:', err);
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        const msg = err.response.data.message;
+        setError(Array.isArray(msg) ? msg.join(', ') : msg);
+      } else {
+        setError('Failed to create tag.');
+      }
+    } finally {
+      setIsCreatingQuickTag(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +118,7 @@ export default function TaskModal({
         status,
         priority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        tagIds: selectedTagIds,
       };
 
       await onSubmit(payload);
@@ -221,6 +269,80 @@ export default function TaskModal({
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Tags & Labels Selection */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                Tags & Labels <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              {selectedTagIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTagIds([])}
+                  className="text-[11px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                >
+                  Clear all ({selectedTagIds.length})
+                </button>
+              )}
+            </div>
+
+            {/* Available Tags Pills */}
+            {availableTags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 p-2 bg-gray-50 border border-gray-200 rounded-lg max-h-28 overflow-y-auto">
+                {availableTags.map((tag) => {
+                  const isSelected = selectedTagIds.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => toggleTag(tag.id)}
+                      style={{
+                        backgroundColor: isSelected ? tag.color : `${tag.color}15`,
+                        borderColor: isSelected ? tag.color : `${tag.color}40`,
+                        color: isSelected ? '#FFFFFF' : tag.color,
+                      }}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
+                        isSelected ? 'shadow-xs font-semibold' : 'hover:opacity-80'
+                      }`}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: isSelected ? '#FFFFFF' : tag.color }}
+                      />
+                      <span>{tag.name}</span>
+                      {isSelected ? <span>✓</span> : <span className="opacity-40">+</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-gray-400 italic">
+                No tags available yet. Create one below!
+              </p>
+            )}
+
+            {/* Quick Add Tag Input */}
+            {onQuickCreateTag && (
+              <div className="mt-2 flex gap-1.5 items-center">
+                <input
+                  type="text"
+                  value={newQuickTagName}
+                  onChange={(e) => setNewQuickTagName(e.target.value)}
+                  placeholder="Create new tag..."
+                  className="flex-1 border border-gray-300 rounded-lg px-2.5 py-1 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleQuickAddTag}
+                  disabled={isCreatingQuickTag || !newQuickTagName.trim()}
+                  className="px-2.5 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 rounded-lg border border-gray-200 cursor-pointer"
+                >
+                  {isCreatingQuickTag ? '...' : '+ Tag'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Modal Actions */}

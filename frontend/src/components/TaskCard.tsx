@@ -98,6 +98,29 @@ export default function TaskCard({ task, onUpdate, onDelete, onEdit }: TaskCardP
         </div>
       </div>
 
+      {/* Color-coded Tag Pills */}
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {task.tags.map((tag) => (
+            <span
+              key={tag.id}
+              style={{
+                backgroundColor: `${tag.color}15`,
+                borderColor: `${tag.color}35`,
+                color: tag.color,
+              }}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: tag.color }}
+              />
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span

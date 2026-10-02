@@ -1,4 +1,4 @@
-import { IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { TaskStatus, TaskPriority } from '../enums/task.enums';
 
@@ -23,4 +23,9 @@ export class CreateTaskDto {
   @IsOptional()
   @IsISO8601({}, { message: 'DueDate must be a valid ISO 8601 date string' })
   dueDate?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'tagIds must be an array' })
+  @IsUUID('4', { each: true, message: 'Each tag ID must be a valid UUID' })
+  tagIds?: string[];
 }

@@ -1,23 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Task } from '@prisma/client';
+import { Task, Tag } from '@prisma/client';
 import { TaskStatus, TaskPriority } from './enums/task.enums';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+
+export type TaskWithTags = Task & { tags: Tag[] };
 
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Task[]> {
+  async findAll(): Promise<TaskWithTags[]> {
     return this.prisma.task.findMany({
       orderBy: { createdAt: 'desc' },
+      include: { tags: true },
     });
   }
 
-  async findOne(id: string): Promise<Task> {
+  async findOne(id: string): Promise<TaskWithTags> {
     const task = await this.prisma.task.findUnique({
       where: { id },
+      include: { tags: true },
     });
     if (!task) {
       throw new NotFoundException(`Task with ID "${id}" not found`);
@@ -25,13 +29,22 @@ export class TasksService {
     return task;
   }
 
-  async create(createTaskDto: CreateTaskDto): Promise<Task> {
+  async create(createTaskDto: CreateTaskDto): Promise<TaskWithTags> {
     const status = createTaskDto.status ?? TaskStatus.TODO;
     const priority = createTaskDto.priority ?? TaskPriority.MEDIUM;
     const dueDate = createTaskDto.dueDate ? new Date(createTaskDto.dueDate) : null;
     const completed = status === TaskStatus.DONE;
 
-    // Persist new task record with status, priority, and optional due date
+    if (createTaskDto.tagIds && createTaskDto.tagIds.length > 0) {
+      const existingTags = await this.prisma.tag.findMany({
+        where: { id: { in: createTaskDto.tagIds } },
+      });
+      if (existingTags.length !== createTaskDto.tagIds.length) {
+        throw new BadRequestException('One or more specified tag IDs do not exist');
+      }
+    }
+
+    // Persist new task record with status, priority, optional due date, and connected tags
     return this.prisma.task.create({
       data: {
         title: createTaskDto.title,
@@ -39,11 +52,19 @@ export class TasksService {
         status,
         priority,
         dueDate,
+        ...(createTaskDto.tagIds && createTaskDto.tagIds.length > 0 && {
+          tags: {
+            connect: createTaskDto.tagIds.map((id) => ({ id })),
+          },
+        }),
+      },
+      include: {
+        tags: true,
       },
     });
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<TaskWithTags> {
     await this.findOne(id);
 
     let status = updateTaskDto.status;
@@ -56,6 +77,15 @@ export class TasksService {
       status = completed ? TaskStatus.DONE : TaskStatus.TODO;
     }
 
+    if (updateTaskDto.tagIds !== undefined && updateTaskDto.tagIds.length > 0) {
+      const existingTags = await this.prisma.tag.findMany({
+        where: { id: { in: updateTaskDto.tagIds } },
+      });
+      if (existingTags.length !== updateTaskDto.tagIds.length) {
+        throw new BadRequestException('One or more specified tag IDs do not exist');
+      }
+    }
+
     return this.prisma.task.update({
       where: { id },
       data: {
@@ -66,6 +96,14 @@ export class TasksService {
         ...(updateTaskDto.dueDate !== undefined && {
           dueDate: updateTaskDto.dueDate ? new Date(updateTaskDto.dueDate) : null,
         }),
+        ...(updateTaskDto.tagIds !== undefined && {
+          tags: {
+            set: updateTaskDto.tagIds.map((tagId) => ({ id: tagId })),
+          },
+        }),
+      },
+      include: {
+        tags: true,
       },
     });
   }
@@ -78,3 +116,4 @@ export class TasksService {
     return { message: 'Task deleted' };
   }
 }
+
