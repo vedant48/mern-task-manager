@@ -54,3 +54,25 @@ NestJS provides clear separation of concerns (Controllers, Services, Modules) an
 - Data access layer will use Prisma Client instead of Mongoose.
 - Frontend components must be typed with TypeScript and updated to use `task.id` instead of `task._id`.
 - The frontend API client must dynamically configure its baseURL via `VITE_API_URL` to support local and Render cloud deployments.
+
+---
+
+## Decision 3 — Staged Backend Replacement: Establish NestJS Foundation Before Introducing Database Layer
+
+### Context
+Migrating directly from Express + MongoDB to NestJS + Prisma + PostgreSQL in a single step creates compound risk where framework issues, TypeScript compilation errors, and database connection/migration failures occur simultaneously.
+
+### Options considered
+1. **Big-Bang Migration**: Introduce NestJS, Prisma, and PostgreSQL simultaneously in a single phase.
+2. **Staged Replacement (Selected)**: First replace the Express runtime with a clean NestJS TypeScript foundation, establish the `/api/tasks` boundary, verify compilation and HTTP boot, and defer Prisma + PostgreSQL persistence to Phase 2.
+
+### Decision
+Adopt Staged Replacement. Phase 1 establishes the NestJS foundation, `main.ts`, `AppModule`, `TasksModule`, `TasksController`, and `TasksService`, with dead Express code removed. Mutations return `501 NotImplemented` with explicit persistence deferral rather than introducing mock in-memory database arrays.
+
+### Reason
+Reduces variables during verification, ensures the NestJS runtime and build pipeline work flawlessly, and cleanly establishes the HTTP resource boundary before tackling database migrations and schema definitions.
+
+### Consequences
+- The NestJS build, start, and HTTP routing are verified independently of database health.
+- No dead Express code remains.
+- Phase 2 can focus exclusively on Prisma schema, PostgreSQL connection, migrations, and repository integration.

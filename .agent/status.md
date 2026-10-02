@@ -1,40 +1,40 @@
 # Project Status
 
 ## Current Phase
-Phase 2: Architecture Planning Complete & Migration Roadmap Established
+Phase 1 Complete: NestJS Backend Foundation Established
 
 ## Completed
 - Baseline git tag `baseline-original` verified at commit `2e4ccdc`.
 - Baseline analysis of existing MERN application completed and documented.
-- Reference repository `parthlashkari/taskflow` analyzed for product/UI direction.
-- Target architecture defined: NestJS backend + Prisma ORM + PostgreSQL + React 19 / TypeScript / Tailwind CSS v4 frontend.
-- Database schema designed with Prisma `Task` model, enums (`TaskStatus`, `TaskPriority`), scalar tag arrays, and indexed query columns.
-- Target REST API contracts specified for CRUD, status transitions, and task insights/analytics.
-- Frontend component hierarchy, state management strategy, and risk analysis completed.
-- Migration roadmap and agentic prompt sequence established.
-- `.agent/context.md`, `.agent/skills/architecture.md`, `.agent/prompts/decisions.md`, and `.agent/prompts/prompt-history.md` updated.
+- Target architecture and migration roadmap established in Decision 2.
+- Backend converted from JavaScript/Express to TypeScript/NestJS foundation:
+  - Created `backend/src/main.ts` with global prefix `/api` and CORS enabled.
+  - Created `AppModule`, `TasksModule`, `TasksController`, and `TasksService`.
+  - Created `tsconfig.json`, `tsconfig.build.json`, `nest-cli.json`, and `backend/.gitignore`.
+  - Updated `backend/package.json` with NestJS dependencies, TypeScript tooling, and build/start scripts.
+  - Deleted obsolete Express files (`server.js`, `routes/taskRoutes.js`, `models/Task.js`).
+- Executed `npm install` and `npm run build` in `backend/` with zero compilation errors.
+- Verified NestJS server startup and HTTP endpoint responses:
+  - `GET /api/tasks` returned `HTTP 200 OK` with `[]`.
+  - `POST /api/tasks` returned `HTTP 501 NotImplemented` (explicit persistence deferral).
+- Verified that frontend files were completely untouched.
+- Verified that Prisma and PostgreSQL have NOT been introduced in this phase.
 
 ## In Progress
-- Awaiting user instruction to begin Phase 1 of migration (Backend foundation & NestJS setup).
+- Awaiting Phase 2: Database Schema & Prisma ORM Integration.
 
 ## Blocked
 - None.
 
-## Decisions Pending
-- None. Architectural direction and component contracts decided in Decision 2 (`.agent/prompts/decisions.md`).
-
-## Known Issues (Baseline Codebase)
-- `frontend/src/api.js` hardcodes a remote Render URL (`https://mern-task-manager-b89p.onrender.com/api`) instead of reading `import.meta.env.VITE_API_URL`.
-- Frontend completely lacks loading indicators, error handling, and offline/error notifications during API requests.
-- Backend routes in `backend/routes/taskRoutes.js` lack `try/catch` error handling and input validation.
-- Missing root-level `.gitignore` and `backend/.gitignore` (only `frontend/.gitignore` exists).
-- `backend/package.json` contains no test script (only exits with error) and no `start` or `dev` script.
-- `frontend/src/App.css` is an unused leftover from default Vite scaffolding.
+## Known Limitations
+- Task persistence is not yet active: mutations (`create`, `update`, `remove`) return `501 NotImplemented` pending Prisma and PostgreSQL integration in Phase 2.
+- Frontend (`frontend/src/api.js`) still contains a hardcoded Render URL and has not yet been switched to the local NestJS backend.
 
 ## Verification Status
-- Verified zero application source files modified in `backend/` or `frontend/`.
-- Verified zero dependencies installed.
-- Verified all documentation updates are internally consistent across `.agent/`.
+- Type-check and build passed: `npm run build` executed successfully.
+- Server startup verified: NestJS application booted cleanly on port 5000.
+- REST routing verified: `/api/tasks` routes mapped and responding.
+- Frontend isolation verified: `git status --short frontend` clean.
 
 ## Next Recommended Action
-Initiate backend foundation phase according to the agreed agentic prompt sequence.
+Proceed to Phase 2: Database Schema & Prisma ORM Integration (configure Prisma schema with `Task` model, enums, migrations, and `PrismaService`).
