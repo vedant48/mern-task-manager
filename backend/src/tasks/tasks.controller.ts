@@ -20,14 +20,22 @@ export class TasksController {
     return this.tasksService.findAll();
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(id);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() body: any) {
+  async create(@Body() body: { title: string; completed?: boolean }) {
     return this.tasksService.create(body);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any) {
+  async update(
+    @Param('id') id: string,
+    @Body() body: { title?: string; completed?: boolean },
+  ) {
     return this.tasksService.update(id, body);
   }
 

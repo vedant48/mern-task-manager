@@ -76,3 +76,30 @@ Reduces variables during verification, ensures the NestJS runtime and build pipe
 - The NestJS build, start, and HTTP routing are verified independently of database health.
 - No dead Express code remains.
 - Phase 2 can focus exclusively on Prisma schema, PostgreSQL connection, migrations, and repository integration.
+
+---
+
+## Decision 4 — Adopt Prisma 7 with Native Driver Adapter (`@prisma/adapter-pg`) and `prisma.config.ts`
+
+### Context
+Phase 2 requires integrating Prisma with PostgreSQL. While Prisma 8 is currently in pre-release (`8.0.0-rc`), Prisma 7 is the stable, production-ready major line (`7.10.0`). In Prisma 7, schema files no longer support `url` inside `datasource db`, requiring `prisma.config.ts` for migration configuration and native driver adapters (such as `@prisma/adapter-pg` with `pg.Pool`) for runtime database connections.
+
+### Options considered
+1. **Prisma 8 (RC / Latest)**: Upgrade to Prisma 8 release candidate.
+   - *Pros*: Latest features.
+   - *Cons*: Unstable release candidate, breaking changes, against explicit project constraints.
+2. **Prisma 7 with `@prisma/adapter-pg` and `prisma.config.ts` (Selected)**:
+   - Pin `@prisma/client`, `prisma`, and `@prisma/adapter-pg` strictly to stable `7.10.0`.
+   - Configure migration datasource in `prisma.config.ts`.
+   - Pass `PrismaPg` adapter with `pg.Pool` to `PrismaClient` in `PrismaService`.
+
+### Decision
+Adopt Option 2. Pin `prisma`, `@prisma/client`, and `@prisma/adapter-pg` strictly to version `7.10.0`. Establish `backend/prisma.config.ts` for migration tooling and initialize `PrismaClient` using `PrismaPg(new Pool({ connectionString }))`.
+
+### Reason
+Provides complete stability and production maintainability, conforms to Prisma 7 architectural standards (removing legacy Rust binary query engines in favor of JavaScript driver adapters), and satisfies all project constraints.
+
+### Consequences
+- All Prisma CLI commands (migrate, validate, studio) read configuration from `prisma.config.ts`.
+- Runtime queries execute through `pg.Pool` with connection reuse and pool lifecycle hooks in `PrismaService`.
+- Packages are strictly pinned without `^` to prevent unintended Prisma 8 upgrades.

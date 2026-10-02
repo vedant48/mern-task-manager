@@ -1,31 +1,52 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Task } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
-  async findAll(): Promise<any[]> {
-    // Database integration will be implemented in Phase 2 with Prisma & PostgreSQL.
-    // An empty array is returned to allow endpoint verification without fake in-memory persistence.
-    return [];
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findAll(): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  async create(taskData: any): Promise<any> {
-    // Persistence is intentionally deferred to Phase 2 (Prisma & PostgreSQL migration).
-    throw new NotImplementedException(
-      'Database persistence is scheduled for Phase 2 (Prisma + PostgreSQL migration).',
-    );
+  async findOne(id: string): Promise<Task> {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+    });
+    if (!task) {
+      throw new NotFoundException(`Task with ID "${id}" not found`);
+    }
+    return task;
   }
 
-  async update(id: string, taskData: any): Promise<any> {
-    // Persistence is intentionally deferred to Phase 2 (Prisma & PostgreSQL migration).
-    throw new NotImplementedException(
-      'Database persistence is scheduled for Phase 2 (Prisma + PostgreSQL migration).',
-    );
+  async create(data: { title: string; completed?: boolean }): Promise<Task> {
+    return this.prisma.task.create({
+      data: {
+        title: data.title,
+        completed: data.completed ?? false,
+      },
+    });
   }
 
-  async remove(id: string): Promise<any> {
-    // Persistence is intentionally deferred to Phase 2 (Prisma & PostgreSQL migration).
-    throw new NotImplementedException(
-      'Database persistence is scheduled for Phase 2 (Prisma + PostgreSQL migration).',
-    );
+  async update(id: string, data: { title?: string; completed?: boolean }): Promise<Task> {
+    await this.findOne(id);
+    return this.prisma.task.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.completed !== undefined && { completed: data.completed }),
+      },
+    });
+  }
+
+  async remove(id: string): Promise<{ message: string }> {
+    await this.findOne(id);
+    await this.prisma.task.delete({
+      where: { id },
+    });
+    return { message: 'Task deleted' };
   }
 }
