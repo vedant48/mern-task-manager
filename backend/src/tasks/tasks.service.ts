@@ -31,6 +31,7 @@ export class TasksService {
     const dueDate = createTaskDto.dueDate ? new Date(createTaskDto.dueDate) : null;
     const completed = status === TaskStatus.DONE;
 
+    // Persist new task record with status, priority, and optional due date
     return this.prisma.task.create({
       data: {
         title: createTaskDto.title,
