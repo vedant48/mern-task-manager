@@ -1,227 +1,244 @@
-# MERN Task Manager
+# 📋 TaskFlow — Full-Stack Kanban & Task Management Platform
 
-A simple to-do application built using the **MERN stack**—MongoDB, Express.js, React, and Node.js. Learn full-stack development with basic functionality to **Add**, **View**, **Update**, and **Delete** tasks.
-
-## 🔗 Live Demo
-
-* **Frontend (UI):** [https://mern-task-frontend-gwue.onrender.com/](https://mern-task-frontend-gwue.onrender.com/)
-* **Backend (API):** [https://mern-task-manager-b89p.onrender.com/](https://mern-task-manager-b89p.onrender.com/)
-
----
-
-## 📂 What’s Inside?
-
--   **Backend** (`backend/`): REST API using Node.js, Express.js, and MongoDB to manage tasks.
--   **Frontend** (`frontend/`): React app (via Vite) that lets you interact with tasks in a modern UI.
--   **Tailwind CSS** already integrated for quick and clean styling.
+<p align="center">
+  <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/NestJS_10-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS" />
+  <img src="https://img.shields.io/badge/Prisma_7-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma 7" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" />
+  <img src="https://img.shields.io/badge/Vite_7-646CFF?style=for-the-badge&logo=vite&logoColor=FFD62E" alt="Vite" />
+  <img src="https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Render" />
+</p>
 
 ---
 
-## 🚀 Setup Guide (Local Development)
+## 📖 Overview
 
-### 1. Clone the repository
+**TaskFlow** is a modern, enterprise-grade task management and Kanban platform. Originally evolved from a simple MERN to-do list, TaskFlow has been systematically refactored into a strongly-typed, production-hardened full-stack application featuring:
 
-```bash
-git clone https://github.com/lovnishverma/mern-task-manager.git
-cd mern-task-manager
+- **Backend**: **NestJS 10** + **TypeScript** with modular architecture, declarative DTO validation, and **Prisma 7 ORM** (`@prisma/adapter-pg` native driver adapter) running on **PostgreSQL**.
+- **Frontend**: **React 19** + **TypeScript** + **Tailwind CSS v4** + **Vite**, featuring an interactive 3-column Kanban board, native HTML5 drag-and-drop, Task Insights analytics, and customizable color-coded labels.
+- **Infrastructure as Code**: Root-level **Render Blueprint** (`render.yaml`) automating deployment across managed PostgreSQL, NestJS Web Service, and Vite Static Site.
 
+---
+
+## 📜 Agentic Workflow & Architecture Documentation
+
+Every architectural change, phased migration, and design decision is documented in the version-controlled `.agent/` documentation suite:
+
+- 🏛️ **[Architectural Decisions Log (`.agent/prompts/decisions.md`)](.agent/prompts/decisions.md)**  
+  Detailed records of all 13 formal architectural decisions (NestJS modular structure, Prisma 7 driver adapter, boundary DTO validation, React 19 Kanban, native HTML5 drag-and-drop, Task Insights analytics, normalized tag modeling, Render Blueprint, etc.).
+- 📜 **[Prompt History & Audit Trail (`.agent/prompts/prompt-history.md`)](.agent/prompts/prompt-history.md)**  
+  Chronological audit trail detailing user instructions, agent interpretations, exact actions taken, files modified, verification commands executed, and results across all development phases.
+- 📊 **[Current Project Status (`.agent/status.md`)](.agent/status.md)**  
+  Live status of completed features, active verification gates, and next recommended actions.
+- 🧠 **[System Architecture & Blueprint (`.agent/context.md`)](.agent/context.md)**  
+  Comprehensive technical specifications, entity models, REST API specifications, and component hierarchies.
+
+---
+
+## ✨ Features
+
+### 📌 Interactive 3-Column Kanban Board
+- Organize tasks across **To Do**, **In Progress**, and **Done** status columns.
+- **Native HTML5 Drag-and-Drop**: Drag task cards between columns with automatic state reconciliation and optimistic UI updates with automatic failure rollback.
+- Quick status dropdown selector directly on each card.
+
+### 📊 Task Insights Analytics Dashboard
+- **Real-Time Derived Metrics**: Total Tasks, Completed, In Progress, To Do, Completion Rate (%) with an animated Tailwind progress bar.
+- **Overdue Task Tracking**: Identifies overdue tasks with actionable alert indicators (completed tasks are strictly excluded).
+- **Priority Distribution Breakdown**: Visual indicator counts for Low, Medium, and High priority items (invariant: `low + medium + high === total`).
+- 100% computed in-memory via `useMemo` with zero network overhead.
+
+### 🏷️ Customizable Tags & Category Labels
+- **Normalized Relational Model**: Stored in PostgreSQL with unique names and color codes, linked to tasks via Prisma implicit many-to-many relationship (`_TagToTask` with `ON DELETE CASCADE`).
+- **Color-Coded Pills**: Visual badges with subtle tinted backgrounds, borders, and color dots on cards.
+- **Tag Manager Modal**: Dedicated interface to create, preview, edit, and delete tags using curated swatches or native color pickers.
+- **Task Modal Integration**: Select multiple tags or create new tags on-the-fly during task creation or editing.
+
+### 🔍 Unified Multi-Filter Toolbar
+- **Real-Time Title Search**: Instant, client-side case-insensitive text matching.
+- **Composed AND Logic**: Filter simultaneously by Search Query + Priority (`LOW`, `MEDIUM`, `HIGH`) + Status (`TODO`, `IN_PROGRESS`, `DONE`) + Tag.
+- Active filter counter and single-click **Reset Filters** button.
+
+### 🛡️ Production-Hardened Security & Validation
+- **Boundary Validation**: Global `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, and `transform: true`.
+- **UUID Protection**: All route parameters strictly validated via NestJS `ParseUUIDPipe` (returns 400 Bad Request on malformed IDs).
+- **Zero Secrets in Git**: Enforced via multi-level `.gitignore` rules (root, backend, frontend).
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    subgraph Client ["Client Layer (Browser)"]
+        UI["React 19 + TypeScript (Vite)"]
+        KB["Kanban Board (HTML5 Drag & Drop)"]
+        TI["Task Insights Analytics (useMemo)"]
+        TB["Multi-Filter Toolbar (AND Logic)"]
+        TM["Tag Manager & Modals"]
+    end
+
+    subgraph Backend ["Backend API Layer (NestJS 10)"]
+        Main["main.ts (Global Prefix /api, CORS, ValidationPipe)"]
+        TasksCtrl["TasksController (/api/tasks)"]
+        TagsCtrl["TagsController (/api/tags)"]
+        TasksSvc["TasksService (Business Logic)"]
+        TagsSvc["TagsService (Tag Management)"]
+        PrismaSvc["PrismaService (@prisma/adapter-pg + pg.Pool)"]
+    end
+
+    subgraph Database ["Persistence Layer (PostgreSQL)"]
+        DB[("PostgreSQL 16")]
+        T_Tasks["tasks table (UUID, status, priority, dueDate)"]
+        T_Tags["tags table (UUID, name unique, color)"]
+        T_Join["_TagToTask join table (CASCADE)"]
+    end
+
+    UI -->|HTTP Requests / JSON| Main
+    Main --> TasksCtrl
+    Main --> TagsCtrl
+    TasksCtrl --> TasksSvc
+    TagsCtrl --> TagsSvc
+    TasksSvc --> PrismaSvc
+    TagsSvc --> PrismaSvc
+    PrismaSvc --> DB
+    DB --> T_Tasks
+    DB --> T_Tags
+    DB --> T_Join
 ```
 
-### 2. Setup the Backend (API server)
+---
 
+## 🚀 Local Development Setup
+
+### Prerequisites
+- **Node.js**: v20+ (v22 LTS recommended)
+- **PostgreSQL**: v14+ running locally or in Docker
+- **Git**
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/vedant48/mern-task-manager.git
+cd mern-task-manager
+```
+
+### 2. Configure Backend
 ```bash
 cd backend
 npm install
-
 ```
 
-1. Create a `.env` file in the `backend/` folder and add your MongoDB connection string:
+Copy the example environment file and configure your local PostgreSQL connection string:
+```bash
+cp .env.example .env
+```
+Edit `.env`:
 ```env
-MONGO_URI=your_mongodb_connection_string
-
+PORT=5000
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/taskmanager?schema=public"
 ```
 
-
-2. Start the backend server:
+Run Prisma migrations and generate the client:
 ```bash
-node server.js
-
+npx prisma migrate dev
+npx prisma generate
 ```
 
+Start the NestJS development server:
+```bash
+npm run start:dev
+```
+The backend API is now running at `http://localhost:5000/api`.
 
-*It should run on `http://localhost:5000`.*
-
-### 3. Setup the Frontend (User interface)
-
+### 3. Configure Frontend
 Open a new terminal window:
-
 ```bash
-cd ../frontend
+cd frontend
 npm install
-npm run dev -- --host
-
 ```
 
-* This starts the app at `http://localhost:5173`.
-* Use `--host` so it works even on other devices on the same network.
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
+Edit `.env`:
+```env
+VITE_API_URL=http://localhost:5000
+```
 
-### 4. Use the App
-
-* Open the app in your browser.
-* Add tasks in the input field.
-* Click on a task to mark it complete (strikethrough).
-* Use the delete option to remove a task.
-
----
-
-## ☁️ Deployment Guide (Render)
-
-Deploy your app for free using Render. You will create two separate services: one for the backend and one for the frontend.
-
-### Step 1: Deploy the Backend (Web Service)
-
-1. Log in to [Render](https://render.com/).
-2. Click **New +** and select **Web Service**.
-3. Connect your GitHub repository.
-4. Configure the service:
-* **Name:** `mern-task-backend`
-* **Root Directory:** `backend`
-* **Environment:** Node
-* **Build Command:** `npm install`
-* **Start Command:** `node server.js`
-
-
-5. Scroll down to **Environment Variables** and add:
-* `MONGO_URI`: Your MongoDB connection string.
-* `PORT`: `10000` (Render's default port).
-
-
-6. Click **Create Web Service**.
-7. **Copy the URL** provided by Render (e.g., `https://your-backend.onrender.com`). You will need this for the frontend.
-
-### Step 2: Deploy the Frontend (Static Site)
-
-1. Go back to the Render Dashboard.
-2. Click **New +** and select **Static Site**.
-3. Connect the same GitHub repository.
-4. Configure the service:
-* **Name:** `mern-task-frontend`
-* **Root Directory:** `frontend`
-* **Build Command:** `npm install && npm run build`
-* **Publish Directory:** `dist`
-
-
-5. **Environment Variables:**
-* Add a variable named `VITE_API_URL`.
-* Set the value to your **Backend URL** from Step 1 (e.g., `https://your-backend.onrender.com/api`).
-
-
-6. **Rewrite Rules:**
-* To ensure React Router works correctly, go to the **Redirects/Rewrites** tab.
-* Add a new rule:
-* **Source:** `/*`
-* **Destination:** `/index.html`
-* **Action:** Rewrite
-
-
-
-
-7. Click **Create Static Site**.
+Start the Vite development server:
+```bash
+npm run dev
+```
+Open your browser at `http://localhost:5173` to explore TaskFlow!
 
 ---
 
-## 🌐 Alternative: Deploy Frontend to GitHub Pages
+## 📡 REST API Reference
 
-If you prefer to host the frontend on GitHub Pages instead of Render, follow these steps.
+All endpoints are mounted under the `/api` global prefix.
 
-### 1. Install `gh-pages`
+### Tasks (`/api/tasks`)
 
-In your `frontend/` directory:
+| Method | Endpoint | Description | Request Body |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/tasks` | List all tasks with associated tags | None |
+| `GET` | `/api/tasks/:id` | Get single task by UUID | None |
+| `POST` | `/api/tasks` | Create task | `{ title, status?, priority?, dueDate?, tagIds? }` |
+| `PUT` | `/api/tasks/:id` | Update task fields / status / tags | `{ title?, status?, completed?, priority?, dueDate?, tagIds? }` |
+| `DELETE` | `/api/tasks/:id` | Delete task by UUID | None |
+
+### Tags (`/api/tags`)
+
+| Method | Endpoint | Description | Request Body |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/tags` | List all tags | None |
+| `GET` | `/api/tags/:id` | Get single tag by UUID | None |
+| `POST` | `/api/tags` | Create tag (unique name, hex color) | `{ name, color? }` |
+| `PUT` | `/api/tags/:id` | Update tag name or color | `{ name?, color? }` |
+| `DELETE` | `/api/tags/:id` | Delete tag (cascades from tasks) | None |
+
+---
+
+## ☁️ Production Deployment (Render Blueprint)
+
+The entire full-stack application is defined as Infrastructure as Code in [`render.yaml`](render.yaml).
+
+### Architecture on Render:
+1. **`taskflow-db`**: Managed PostgreSQL database (`taskmanager`).
+2. **`taskflow-backend`**: Node.js Web Service running NestJS (`rootDir: backend`, port `10000`).
+3. **`taskflow-frontend`**: Static Site running Vite SPA (`rootDir: frontend`, publish `./dist`, rewrite `/* -> /index.html`).
+
+### Deploy in 3 Steps:
+1. Push your repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New +** → **Blueprint**.
+3. Select your repository. Render automatically provisions the PostgreSQL database, executes migrations via `npx prisma migrate deploy`, builds the NestJS web service, and compiles the Vite static site.
+
+---
+
+## 🧪 Quality Assurance & Verification
+
+Every phase satisfies rigorous automated verification:
 
 ```bash
-npm install gh-pages --save-dev
+# Backend Verification
+cd backend
+npx prisma validate       # Verifies schema integrity
+npx prisma migrate status   # Verifies database migration synchronization
+npm run build              # Runs prisma generate && nest build
 
+# Frontend Verification
+cd ../frontend
+npx tsc --noEmit           # Strict TypeScript type-checking
+npm run build              # Production Vite bundle build
+npm run lint               # ESLint verification with zero warnings
 ```
-
-### 2. Update `vite.config.js`
-
-Add the `base` path property:
-
-```javascript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// [https://vitejs.dev/config/](https://vitejs.dev/config/)
-export default defineConfig({
-  plugins: [react()],
-  base: "/mern-task-manager/", // REPLACE "mern-task-manager" with your repo name
-})
-
-```
-
-### 3. Update `package.json`
-
-In `frontend/package.json`, add the `homepage` and scripts:
-
-```json
-{
-  "name": "frontend",
-  "homepage": "https://<your-github-username>.github.io/mern-task-manager", 
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist" 
-  }
-}
-
-```
-
-### 4. Deploy
-
-```bash
-npm run deploy
-
-```
-
-### ⚠️ Crucial: Backend Connection for GitHub Pages
-
-Since your frontend is on GitHub Pages but backend is on Render:
-
-1. **Frontend API URL:** Ensure your `api.js` points to the Render Backend URL.
-2. **Backend CORS:** Update `backend/server.js` to allow the GitHub Pages URL:
-```javascript
-app.use(cors({
-  origin: ["[https://lovnishverma.github.io](https://lovnishverma.github.io)", "http://localhost:5173"] 
-}));
-
-```
-
-
 
 ---
 
-## 💡 Why It’s Helpful for Beginners
+## 📄 License
 
-* Clear separation of **frontend** and **backend** code.
-* Learn how React interacts with a **REST API**.
-* Explore essential web development skills: routing, CRUD, state management, styling.
-* Lightweight and easy to run—no heavy setup required.
-
----
-
-## 🛠 Tips if It Doesn’t Work
-
-* **Backend First:** Make sure the backend is running before using the frontend.
-* **Connection Issues:** If tasks don’t load:
-* **Locally:** Ensure the `api.js` in `frontend/src` points to `http://localhost:5000` (or your LAN IP).
-* **On Render:** Ensure you added the `VITE_API_URL` environment variable correctly.
-
-
-* **Windows Users:** If you see line-ending warnings from Git (`LF will be replaced by CRLF`), that’s normal and safe to ignore.
-
----
-
-## Happy Coding!
-
-Build, break, fix, and learn—this app is your sandbox to explore full-stack development with MERN. Feel free to tweak it, experiment, and make it your own!
+Distributed under the ISC License. See `LICENSE` for more information.

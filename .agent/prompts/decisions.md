@@ -364,4 +364,39 @@ Adopt Option 2. Implement a normalized `Tag` model with Prisma 7 implicit many-t
 - All task API responses include the `tags: Tag[]` relationship payload.
 - Deleting a tag immediately disassociates it from all affected tasks in the UI state and database without deleting the tasks themselves.
 
+---
+
+## Decision 13 — Render Blueprint as Code (`render.yaml`) with Monorepo Subdirectories and Dual Migration Triggers
+
+### Context
+Phase 7.5 prepares the TaskFlow application for reliable production deployment on Render. The system spans three distinct services: a managed PostgreSQL database, a NestJS backend web service, and a React/Vite static frontend. The configuration must automate deployment without exposing secrets, guarantee safe database migration execution, support Render PostgreSQL SSL requirements, bind to Render dynamic ports, and connect the frontend to the deployed backend without hardcoded URLs.
+
+### Options considered
+1. **Manual Web Dashboard Provisioning**:
+   - Manually click through the Render Dashboard to create database, backend, and static site.
+   - *Pros*: Simple for one-off manual setup.
+   - *Cons*: Not reproducible, prone to human error, lacks version-controlled infrastructure-as-code, difficult for team collaboration or review.
+2. **Infrastructure-as-Code via Root `render.yaml` Blueprint (Selected)**:
+   - Define all three tiers (`taskflow-db`, `taskflow-backend`, `taskflow-frontend`) in a single root-level `render.yaml`.
+   - Use `rootDir` to isolate `backend` and `frontend` subprojects and trigger builds only on relevant file changes.
+   - Inject database credentials securely using Render's `fromDatabase: { name: taskflow-db, property: connectionString }`.
+   - Implement dual migration triggers (`preDeployCommand: npx prisma migrate deploy` and `startCommand: npx prisma migrate deploy && npm run start:prod`) ensuring migrations apply regardless of Render plan tier (free vs paid).
+   - Configure Render PostgreSQL SSL handling in `PrismaService` (`rejectUnauthorized: false` in production).
+   - Configure frontend SPA client-side routing rewrites (`source: /*, destination: /index.html`).
+   - Declare `VITE_API_URL` with `sync: false` to allow prompting/configuring public backend URL without hardcoding.
+
+### Decision
+Adopt Option 2. Author a standardized `render.yaml` Blueprint specification, establish root and subproject `.gitignore` boundaries, configure dynamic port and SSL handling in the backend, and ensure build scripts generate Prisma Client automatically.
+
+### Reason
+- Eliminates manual deployment steps and configuration drift.
+- Guarantees zero credential exposure in version control.
+- Ensures Prisma migrations run safely before accepting HTTP traffic.
+- Provides immediate compatibility with both Render free and paid tier limitations.
+
+### Consequences
+- Entire full-stack application deploys with one click via Render "Blueprint" workflow.
+- Database credentials stay strictly inside Render's managed environment.
+- Subproject changes trigger selective, independent builds via `rootDir`.
+
 

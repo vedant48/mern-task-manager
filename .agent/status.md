@@ -1,50 +1,55 @@
 # Project Status
 
 ## Current Phase
-Phase 7 Complete: Task Tags, Labels & Category Management
+Phase 7.5 Complete: Render Deployment Preparation & Blueprint
 
 ## Completed
-- Backend & Database Extension (Prisma 7.x):
-  - Created normalized `Tag` model (`id` UUID, `name` unique string, `color` hex default `#3B82F6`, `createdAt` timestamp).
-  - Established implicit many-to-many relationship between `Task` and `Tag` (`tags Tag[]` on Task, `tasks Task[]` on Tag) with PostgreSQL foreign key cascading on delete.
-  - Successfully created and applied Prisma migration `20261002205250_add_tags_model`.
-  - Maintained Prisma 7.10.0 strictly without upgrading to Prisma 8.
-- Robust REST Tag Management & Association APIs:
-  - Created modular `TagsModule` with `TagsController` and `TagsService` implementing:
-    - `GET /api/tags`: List all tags ordered by creation timestamp.
-    - `POST /api/tags`: Create tag with trimmed, non-empty name and hex color validation. Prevents duplicate tag names via 409 Conflict.
-    - `PUT /api/tags/:id`: Update tag name and color with `ParseUUIDPipe` and duplicate conflict check.
-    - `DELETE /api/tags/:id`: Delete tag, cleanly cascading and disassociating from tasks while preserving tasks.
-  - Extended Task APIs (`POST /api/tasks`, `PUT /api/tasks/:id`):
-    - Added `@IsOptional() @IsArray() @IsUUID('4', { each: true }) tagIds?: string[]` to `CreateTaskDto` and `UpdateTaskDto`.
-    - Added tag validation in `TasksService` verifying that all provided tag IDs exist in the database (returning 400 Bad Request if invalid/non-existent).
-    - Enabled connecting and resetting (`set`) task tags, including removing all tags with `tagIds: []`.
-    - All task retrieval endpoints (`findAll`, `findOne`, `create`, `update`) include `tags: true`.
-- Frontend Tag UI & Integration:
-  - Extended TypeScript contracts in `frontend/src/types/task.ts` with `Tag`, `CreateTagInput`, `UpdateTagInput`, and added `tags` to `Task` and `tagIds` to task inputs.
-  - Added Axios API methods (`getTags`, `createTag`, `updateTag`, `deleteTag`) in `frontend/src/api.ts`.
-  - Built `TagManagerModal.tsx` providing complete tag management (list tags, preview colors, create tag with curated swatches or native color picker, inline edit, delete with confirmation).
-  - Enhanced `TaskCard.tsx` with color-coded tag pill badges (tinted background, border, and dot indicator).
-  - Enhanced `TaskModal.tsx` with tag selection pills, active checkmarks, clear-all action, and inline quick-tag creation.
-  - Enhanced `TaskFilterBar.tsx` with tag filter dropdown (`All Tags` / specific tags) and "Manage Tags" button.
-  - Updated `App.tsx` filtering memo with consistent AND logic across search query, priority filter, status filter, and tag filter.
-  - Preserved 3-column Kanban structure, native HTML5 drag-and-drop, Task Insights analytics, and light theme.
-- Strict Scope & Quality Boundaries:
-  - Zero external state management libraries added (no Redux, Zustand, React Query).
-  - Zero external chart/UI libraries added.
-  - Zero occurrences of `_id` in frontend codebase.
-  - Zero hardcoded backend URLs introduced.
-  - Prisma pinned strictly to 7.10.0.
-  - Zero git commits created.
+- Render Infrastructure Blueprint Specification (`render.yaml`):
+  - Defined 3-tier architecture as code:
+    1. Managed PostgreSQL database (`taskflow-db`, database `taskmanager`, user `taskflow`, free plan).
+    2. Backend NestJS Web Service (`taskflow-backend`, Node runtime, free plan, `rootDir: backend`).
+    3. Frontend Vite Static Site (`taskflow-frontend`, static runtime, `rootDir: frontend`, `staticPublishPath: ./dist`).
+  - Automated database migration and generation pipeline:
+    - Build command: `npm install && npx prisma generate && npm run build`
+    - Pre-deploy command: `npx prisma migrate deploy`
+    - Start command: `npx prisma migrate deploy && npm run start:prod` (fallback guaranteeing migrations apply across all tiers)
+    - Health check endpoint: `/api/tasks`
+  - Dynamic service linking via Render environment variables:
+    - Injected `DATABASE_URL` directly from `taskflow-db` connectionString reference.
+    - Protected production port binding listening on Render's `$PORT` (`0.0.0.0:${PORT}`).
+  - Static site configuration:
+    - Publish directory configured to `./dist`.
+    - SPA client-side routing rewrite rule: `routes: [{ type: rewrite, source: /*, destination: /index.html }]`.
+    - Declared `VITE_API_URL` with `sync: false` to allow prompting/configuring public backend URL without hardcoding.
+- Production Hardening & Environment Isolation:
+  - Created root `.gitignore` ignoring `node_modules/`, `dist/`, `.env`, `.env.*` (while keeping `.env.example`), and OS/IDE artifacts.
+  - Updated `backend/.gitignore` ignoring `.env.*` while explicitly preserving `!.env.example`.
+  - Configured Render PostgreSQL SSL support in `backend/src/prisma/prisma.service.ts` with `rejectUnauthorized: false` for production.
+  - Made `backend/prisma.config.ts` resilient with fallback for `DATABASE_URL` so `prisma validate` runs cleanly during builds.
+  - Updated `backend/package.json` build script to `"prisma generate && nest build"`.
+- Verification Checklist Confirmed:
+  - `npx prisma validate`: Passed with 0 errors.
+  - `npx prisma migrate status`: Database schema up to date with 3 migrations.
+  - Backend `npm run build`: Succeeded with code 0 (`prisma generate && nest build`).
+  - Frontend `npm run build`: Succeeded with code 0 (`tsc && vite build`).
+  - Frontend `npm run lint`: Succeeded with 0 warnings/errors (`eslint .`).
+  - Staged `.env` check: Confirmed 0 `.env` files staged or tracked (only `.env.example`).
+  - Tracked `node_modules` check: 0 files tracked.
+  - Tracked `dist` check: 0 files tracked.
+  - Hardcoded localhost production URL check: None (uses dynamic `import.meta.env.VITE_API_URL`).
+  - Hardcoded Render URL check: None.
+  - Prisma version check: Strictly pinned to `7.10.0` (zero upgrade to Prisma 8).
+  - Blueprint syntax check: Valid YAML with correct service boundaries and relationships.
+  - Zero git commits or pushes executed.
 
 ## In Progress
-- Phase 7 complete. Awaiting user guidance / next phase.
+- Phase 7.5 complete. Awaiting user guidance before proceeding to Phase 8.
 
 ## Blocked
 - None.
 
 ## Known Limitations
-- Antigravity browser automated subagent encountered an environment-level Playwright driver download error (`404 Not Found` for Playwright v1.57.0 on azureedge.net). All code and live API endpoints were fully verified via Node.js scripts, curl/Fetch, and TypeScript compilers.
+- None for deployment blueprint. Application is 100% prepared for Render Blueprint deployment.
 
 ## Verification Status
 - Backend Prisma schema: Valid (`npx prisma validate` passed).
@@ -54,22 +59,8 @@ Phase 7 Complete: Task Tags, Labels & Category Management
 - Frontend TypeScript check: Passed with 0 errors (`npx tsc --noEmit`).
 - Frontend Vite build: Passed with 0 errors (`npm run build`).
 - Frontend ESLint: Passed with 0 errors/warnings (`npm run lint`).
-- Live API Suite: 17 test cases executed against PostgreSQL on port 5433 and NestJS on port 5000:
-  - Empty tag list retrieval
-  - Tag name validation (empty/whitespace rejected with 400)
-  - Color validation (invalid hex rejected with 400)
-  - Route param UUID validation (invalid UUID rejected with 400 via ParseUUIDPipe)
-  - Non-existent tag UUID (returns 404)
-  - Tag creation
-  - Duplicate tag name conflict (returns 409)
-  - Tag update
-  - Task creation with multiple tags
-  - Task creation with non-existent tag UUID (rejected with 400)
-  - Task retrieval with populated tags
-  - Updating task tags (removing single tag)
-  - Updating task tags with empty array (removes all tags)
-  - Tag deletion (cascades cleanly from task associations)
-  - Task deletion
+- Git cleanliness: Zero tracked `.env`, `node_modules`, or `dist/` files.
+- Configuration verification: `render.yaml` valid, CORS enabled for production, SSL configured for Render PostgreSQL.
 
 ## Next Recommended Action
 Proceed to Phase 8 (e.g. Subtasks / Checklist Items or Due Date Reminders & Notifications) per project roadmap.

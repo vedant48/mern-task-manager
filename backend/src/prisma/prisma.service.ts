@@ -9,7 +9,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
-    const pool = new Pool({ connectionString });
+    const needsSsl =
+      process.env.NODE_ENV === 'production' ||
+      Boolean(connectionString?.includes('sslmode=require')) ||
+      process.env.DATABASE_SSL === 'true';
+
+    const pool = new Pool({
+      connectionString,
+      ...(needsSsl && {
+        ssl: {
+          rejectUnauthorized: false,
+        },
+      }),
+    });
     const adapter = new PrismaPg(pool);
     super({ adapter });
     this.pool = pool;
