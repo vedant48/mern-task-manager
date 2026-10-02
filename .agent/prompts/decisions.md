@@ -197,5 +197,36 @@ Adopt Option 2. Create PostgreSQL enums `TaskStatus` and `TaskPriority` via migr
 - New task creation defaults to `TODO` status and `MEDIUM` priority with `dueDate: null`.
 - API responses include full Kanban metadata (`status`, `priority`, `dueDate`).
 
+---
+
+## Decision 8 — 3-Column TaskFlow Kanban UI with Pure React State and Presentational Component Segregation
+
+### Context
+Phase 5B requires replacing the flat single-column task list with a clean, responsive 3-column Kanban board (`TODO` → "To Do", `IN_PROGRESS` → "In Progress", `DONE` → "Done"). The application needs to support task creation with backend defaults, status transitions, inline metadata editing (title, priority, due date), and task deletion without introducing complex external state libraries (Redux, Zustand, React Query) or drag-and-drop libraries prematurely.
+
+### Options considered
+1. **Third-Party Drag-and-Drop / Kanban State Libraries**: Install libraries such as `@hello-pangea/dnd` or `zustand`.
+   - *Pros*: Pre-packaged gestures and animations.
+   - *Cons*: Bloats bundle size, violates phase constraints, adds unnecessary abstraction before core board layout and data flow are verified.
+2. **Modular Presentational Component Tree with Local React State (Selected)**:
+   - Root `App.tsx` coordinates API communication via `api.ts` and holds tasks state in React `useState`.
+   - `KanbanBoard.tsx` filters tasks by status into 3 distinct column groups.
+   - `KanbanColumn.tsx` presents column headers with badges and renders card lists with empty states.
+   - `TaskCard.tsx` encapsulates card presentation, priority badges, formatted due dates, fast status dropdowns, and inline editing.
+   - `AddTask.tsx` handles task creation using backend defaults with an expandable options drawer.
+
+### Decision
+Adopt Option 2. Build the Kanban board using a clean modular hierarchy (`App` -> `KanbanBoard` -> `KanbanColumn` -> `TaskCard`), responsive Tailwind CSS grid (`grid-cols-1 md:grid-cols-3`), and pure React state handlers.
+
+### Reason
+- Keeps the architecture lightweight, fast, and easy to maintain.
+- Ensures strict separation of concerns: API calls remain inside `api.ts`, orchestration remains in `App.tsx`, and presentational components remain pure and reusable.
+- Fully satisfies all Phase 5B constraints without introducing external state libraries or altering backend code.
+
+### Consequences
+- Status transitions are immediately functional via the card status dropdown selector or inline editor.
+- The UI is fully prepared for future phases (Phase 5C native drag-and-drop and Phase 6 analytics dashboard) without architectural refactoring.
+
+
 
 

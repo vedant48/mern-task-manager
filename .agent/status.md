@@ -1,50 +1,66 @@
 # Project Status
 
 ## Current Phase
-Phase 5A Complete: Task Domain & API Extension (Status, Priority, DueDate)
+Phase 5B Complete: Basic TaskFlow Kanban UI (3-Column Layout, Status Transitions & Inline Card Actions)
 
 ## Completed
-- Extended Prisma Schema (`backend/prisma/schema.prisma`):
-  - Created enum `TaskStatus`: `TODO`, `IN_PROGRESS`, `DONE` (default `TODO`).
-  - Created enum `TaskPriority`: `LOW`, `MEDIUM`, `HIGH` (default `MEDIUM`).
-  - Added nullable `dueDate DateTime?`.
-- Executed migration `20261002195351_add_task_status_priority_due_date` against PostgreSQL database `taskmanager` (`npx prisma migrate dev`).
-- Regenerated Prisma Client (`npx prisma generate`).
-- Updated `CreateTaskDto` and `UpdateTaskDto` with validation decorators:
-  - `@IsEnum(TaskStatus)`: restricts `status` strictly to `TODO`, `IN_PROGRESS`, `DONE`.
-  - `@IsEnum(TaskPriority)`: restricts `priority` strictly to `LOW`, `MEDIUM`, `HIGH`.
-  - `@IsISO8601()`: enforces valid ISO 8601 date string for `dueDate`.
-- Updated `TasksService` (`backend/src/tasks/tasks.service.ts`):
-  - Sets schema defaults on creation (`status: TODO`, `priority: MEDIUM`, `dueDate: null`).
-  - Implements two-way synchronization between `status` and `completed` (`status === DONE` <-> `completed === true`).
-  - Preserved existing CRUD REST contracts on `/api/tasks`.
-- Updated frontend shared types (`frontend/src/types/task.ts`) with `status`, `priority`, and `dueDate` definitions without modifying UI components.
-- Verified live HTTP endpoints against PostgreSQL:
-  - Default `POST` assigns `status: TODO`, `priority: MEDIUM`, `dueDate: null`, `completed: false`.
-  - Explicit `POST` persists specified `status`, `priority`, and `dueDate`.
-  - Invalid `status` rejected with 400 Bad Request (`Status must be one of: TODO, IN_PROGRESS, DONE`).
-  - Invalid `priority` rejected with 400 Bad Request (`Priority must be one of: LOW, MEDIUM, HIGH`).
-  - Invalid `dueDate` rejected with 400 Bad Request (`DueDate must be a valid ISO 8601 date string`).
-  - `PUT` toggles status/completed in harmony.
-  - `DELETE` and `GET` work cleanly.
-- Verified TypeScript compilation and builds across both subprojects (`backend` and `frontend` builds pass with 0 errors).
+- Extended Frontend Shared Domain Types (`frontend/src/types/task.ts`):
+  - Added `TaskStatus` (`TODO`, `IN_PROGRESS`, `DONE`) and `TaskPriority` (`LOW`, `MEDIUM`, `HIGH`).
+  - Extended `CreateTaskInput` and `UpdateTaskInput` to support optional status, priority, and nullable dueDate.
+- Designed & Implemented 3-Column Kanban Board (`frontend/src/components/KanbanBoard.tsx`):
+  - Column 1: `TODO` → "To Do".
+  - Column 2: `IN_PROGRESS` → "In Progress".
+  - Column 3: `DONE` → "Done".
+  - Built with responsive Tailwind CSS grid (`grid-cols-1 md:grid-cols-3 gap-5 items-start`).
+- Created Kanban Column Component (`frontend/src/components/KanbanColumn.tsx`):
+  - Renders column header with semantic title, live task count badge, and color accent bar.
+  - Renders list of `TaskCard` components or an empty column state indicator.
+- Created Task Card Component (`frontend/src/components/TaskCard.tsx`):
+  - Displays title (with strike-through styling when `DONE`).
+  - Displays priority badge (`LOW`, `MEDIUM`, `HIGH`) with curated, accessible Tailwind badge styles.
+  - Displays formatted due date tag (`📅 Mon DD, YYYY`) when present.
+  - Interactive status dropdown selector enabling direct status transitions via `onUpdate`.
+  - Inline editing interface allowing updates to title, status, priority, and due date.
+  - Delete action button triggering `onDelete(task.id)`.
+- Updated Task Creation Component (`frontend/src/components/AddTask.tsx`):
+  - Primary title input utilizing backend defaults (`TODO` status, `MEDIUM` priority, `null` dueDate).
+  - Expandable options drawer for setting priority, status, and due date at creation time.
+- Updated Application Root (`frontend/src/App.tsx`):
+  - Clean TaskFlow header with live summary metric chips (Total, To Do, In Progress, Done counts).
+  - Connected state handlers (`fetchTasks`, `handleAdd`, `handleUpdate`, `handleDelete`) with error handling and retry mechanism.
+  - Replaced legacy single-column list with `KanbanBoard`.
+- Cleaned Legacy Components:
+  - Removed obsolete `frontend/src/components/TaskList.tsx`.
+- Strict Constraint Adherence:
+  - Zero drag-and-drop code introduced.
+  - Zero analytics code introduced.
+  - Zero external state management libraries added (pure React state and props).
+  - Zero backend or Prisma schema/migration files modified.
+- Verified Compilation & Linters:
+  - `npx tsc --noEmit` and `npm run build` in `frontend/` passed with 0 errors.
+  - `npm run lint` in `frontend/` passed with 0 errors.
+  - `npm run build` in `backend/` passed with 0 errors.
+  - Verified live CRUD operations against PostgreSQL.
 
 ## In Progress
-- Awaiting next instruction (Phase 5B: TaskFlow Kanban UI & Board Interactions).
+- Awaiting next instruction (Phase 5C: Native HTML5 Drag-and-Drop or Phase 6: Task Insights Analytics).
 
 ## Blocked
 - None.
 
 ## Known Limitations
-- Frontend UI remains the simple task list until Phase 5B (Kanban board layout, drag-and-drop, and filters).
+- Drag-and-drop transitions are not yet enabled (status changes occur via card dropdown or edit modal).
+- Analytics dashboard (Task Insights) not yet implemented.
 
 ## Verification Status
-- Database migration: Applied and schema in sync (`npx prisma migrate status`).
-- Backend build: Passed (`npm run build`).
-- Frontend build: Passed (`npm run build`).
-- Validation rules: Verified live over HTTP for status, priority, and dueDate.
-- Backward compatibility: Confirmed existing CRUD operations work unmodified.
-- Code isolation: Zero unrelated frontend files modified.
+- Frontend TypeScript & Vite build: Passed (`tsc && vite build`).
+- Frontend ESLint: Passed (`eslint .` clean with 0 warnings/errors).
+- Backend NestJS build: Passed (`nest build`).
+- Database & Backend isolation: Confirmed 0 files touched in `backend/` or `prisma/`.
+- UI Column Segregation: Verified tasks populate To Do, In Progress, and Done columns according to `status`.
+- Card Presentation: Verified title, priority badge, and formatted due date display accurately.
+- Full CRUD Lifecycle: Verified creation with defaults, status transitions, inline updates, and deletion.
 
 ## Next Recommended Action
-Proceed to Phase 5B: TaskFlow Kanban UI migration (columns: To Do, In Progress, Done; card priority badges; due date tags; search/filter controls; and Task Insights dashboard).
+Proceed to Phase 5C (Native Drag-and-Drop Kanban interactions) or Phase 6 (Task Insights Analytics dashboard).
+

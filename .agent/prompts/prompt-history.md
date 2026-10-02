@@ -519,6 +519,78 @@ Phase 5A completed and verified. Task domain and backend API fully support Kanba
 ### Next step
 Await user instructions for Phase 5B (TaskFlow Kanban UI evolution: 3-column workflow board, drag-and-drop, priority badges, filters, and Task Insights).
 
+## Prompt 10 — Phase 5B: Basic TaskFlow Kanban UI (3-Column Layout, Status Transitions & Inline Card Actions)
 
+### User instruction
+Implement Phase 5B: Basic TaskFlow Kanban UI.
+Follow .agent docs.
+Goal: Replace current task list presentation with a clean 3-column Kanban board (TODO → "To Do", IN_PROGRESS → "In Progress", DONE → "Done").
+Requirements:
+1. Use existing React + TypeScript frontend.
+2. Use existing REST API.
+3. Display tasks in the correct column based on status.
+4. Task cards must display: title, priority, due date when present.
+5. Preserve existing: create task, edit/update task, delete task.
+6. New tasks should use backend defaults.
+7. Allow changing task status through existing edit/update mechanism.
+8. Add basic responsive styling using existing Tailwind setup.
+9. Keep UI light and clean.
+10. Do NOT implement drag-and-drop yet.
+11. Do NOT implement analytics yet.
+12. Do NOT add Redux, Zustand, React Query, or another state library.
+13. Do NOT modify backend code.
+14. Do NOT modify Prisma schema or migrations.
+15. Do not introduce unrelated dependencies unless absolutely necessary.
+Architecture: keep components small/reusable, API calls in API client, keep logic out of presentational components, use existing Task types, do not reintroduce _id.
+Verification: npm run build, verify all 3 columns render, verify tasks appear under correct status, verify create/update/delete works, verify priority and dueDate display, verify responsive layout, verify no backend/database files changed.
+Update .agent/status.md, decisions.md, prompt-history.md. Record only executed commands. Do NOT commit. Stop after Phase 5B and provide concise report.
 
+### Agent interpretation
+Construct a modular, responsive 3-column Kanban board replacing the single-column `TaskList`. Group tasks strictly by status (`TODO`, `IN_PROGRESS`, `DONE`). Build presentational components `KanbanBoard`, `KanbanColumn`, and `TaskCard` cleanly styled with Tailwind CSS without adding external state management libraries or drag-and-drop dependencies. In `TaskCard`, display title, styled priority badges (`LOW`, `MEDIUM`, `HIGH`), formatted due dates, direct status selector dropdown, inline edit form, and delete button. Update `AddTask` to preserve backend defaults while offering expandable fields for status, priority, and due date. Remove obsolete `TaskList.tsx`. Update root `App.tsx` with header summary metric counters and board orchestration. Verify TypeScript compilation, ESLint, responsive layout, live REST API integration, and confirm zero changes to backend or database.
 
+### Action taken
+1. Updated `frontend/src/types/task.ts` with `TaskStatus` (`TODO`, `IN_PROGRESS`, `DONE`) and `TaskPriority` (`LOW`, `MEDIUM`, `HIGH`), and extended `CreateTaskInput` and `UpdateTaskInput`.
+2. Created `frontend/src/components/TaskCard.tsx` with priority badges, formatted due dates (`📅`), status dropdown selector, inline editing modal, and delete button.
+3. Created `frontend/src/components/KanbanColumn.tsx` displaying semantic column headers, live task count pill badges, and empty-state messaging.
+4. Created `frontend/src/components/KanbanBoard.tsx` partitioning tasks into `TODO`, `IN_PROGRESS`, and `DONE` columns across a responsive Tailwind CSS grid (`grid-cols-1 md:grid-cols-3 gap-5`).
+5. Updated `frontend/src/components/AddTask.tsx` with clean title submission using backend defaults and an expandable drawer for optional priority, status, and due date inputs.
+6. Updated `frontend/src/App.tsx` with header summary metrics (Total, To Do, In Progress, Done counts), error banner with retry, and Kanban board integration.
+7. Removed obsolete `frontend/src/components/TaskList.tsx`.
+8. Executed `npm run build` in `frontend/` (`tsc && vite build`) and `backend/` (`nest build`).
+9. Executed `npm run lint` in `frontend/` (`eslint .`).
+10. Executed live HTTP tests against the backend confirming:
+    - Default task creation via `POST /api/tasks` assigns `status: "TODO"`, `priority: "MEDIUM"`, `dueDate: null`.
+    - Status transitions and updates via `PUT /api/tasks/:id` update status, priority, and due dates.
+    - Task deletion via `DELETE /api/tasks/:id` removes tasks cleanly.
+    - Status segregation accurately places tasks into their respective Kanban columns.
+11. Confirmed zero backend or Prisma files were touched via `git status --short`.
+12. Updated `.agent/status.md`, `.agent/prompts/decisions.md` (Decision 8), and `.agent/prompts/prompt-history.md`.
+
+### Files changed
+- `frontend/src/types/task.ts` (modified)
+- `frontend/src/App.tsx` (modified)
+- `frontend/src/components/AddTask.tsx` (modified)
+- `frontend/src/components/KanbanBoard.tsx` (created)
+- `frontend/src/components/KanbanColumn.tsx` (created)
+- `frontend/src/components/TaskCard.tsx` (created)
+- `frontend/src/components/TaskList.tsx` (deleted)
+- `.agent/status.md` (updated)
+- `.agent/prompts/decisions.md` (updated)
+- `.agent/prompts/prompt-history.md` (updated)
+
+### Verification
+Commands actually executed:
+- `npm run build` in `frontend/`: Succeeded (0 TypeScript errors, bundle generated in 1.09s).
+- `npm run lint` in `frontend/`: Succeeded with exit code 0 (zero ESLint errors or warnings).
+- `npm run build` in `backend/`: Succeeded with exit code 0.
+- `git status --short`: Verified only `frontend/` and `.agent/` files modified; 0 backend or database files touched.
+- `Invoke-RestMethod -Uri "http://localhost:5000/api/tasks" -Method Get`: Returned active tasks.
+- `Invoke-RestMethod -Uri "http://localhost:5000/api/tasks" -Method Post ...`: Verified default creation (`TODO`, `MEDIUM`, `null` dueDate).
+- `Invoke-RestMethod -Uri "http://localhost:5000/api/tasks/:id" -Method Put ...`: Verified status transition to `IN_PROGRESS` and `DONE`.
+- `Invoke-RestMethod -Uri "http://localhost:5000/api/tasks/:id" -Method Delete`: Verified task deletion.
+
+### Result
+Phase 5B successfully implemented and verified. The single task list is replaced by a clean, responsive 3-column Kanban board with live status transitions, priority badges, due dates, and full CRUD support.
+
+### Next step
+Await user instruction for Phase 5C (Native HTML5 Drag-and-Drop) or Phase 6 (Task Insights Analytics Dashboard).
