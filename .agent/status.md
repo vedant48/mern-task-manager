@@ -1,49 +1,50 @@
 # Project Status
 
 ## Current Phase
-Phase 3 Complete: API Validation Hardening (DTOs, Global ValidationPipe, and ParseUUIDPipe)
+Phase 4 Complete: Frontend TypeScript Migration & Dynamic API Integration
 
 ## Completed
-- Installed `class-validator` and `class-transformer` in `backend/package.json`.
-- Created `CreateTaskDto` (`backend/src/tasks/dto/create-task.dto.ts`):
-  - `title` is required (`@IsNotEmpty()`, `@IsString()`).
-  - Inputs are sanitized and trimmed appropriately (`@Transform()`).
-- Created `UpdateTaskDto` (`backend/src/tasks/dto/update-task.dto.ts`):
-  - `title` is optional, trimmed, non-empty when provided.
-  - `completed` is optional, boolean when provided (`@IsBoolean()`).
-- Enabled NestJS global `ValidationPipe` in `backend/src/main.ts` with:
-  - `whitelist: true`
-  - `forbidNonWhitelisted: true`
-  - `transform: true`
-- Integrated `ParseUUIDPipe` on all `:id` route parameters in `TasksController` (`findOne`, `update`, `remove`) returning HTTP 400 for malformed UUIDs.
-- Preserved thin controller pattern and encapsulated database logic in `TasksService`.
-- Preserved existing REST API contract: `GET /api/tasks`, `POST /api/tasks`, `PUT /api/tasks/:id`, `DELETE /api/tasks/:id`.
-- Maintained zero changes to `frontend/` and zero changes to Prisma schema or database tables.
-- Verified live HTTP validation behavior against PostgreSQL:
-  - Valid POST creates task with 201 Created.
-  - Empty or whitespace title is rejected with 400 Bad Request.
-  - Unknown payload fields are rejected with 400 Bad Request (`forbidNonWhitelisted: true`).
-  - Valid PUT updates title and completion status.
-  - Invalid UUID parameter is rejected with 400 Bad Request (`Validation failed (uuid is expected)`).
-  - `npm run build` succeeds cleanly with zero errors.
+- Converted all frontend JavaScript and JSX modules to TypeScript and TSX:
+  - `frontend/src/main.tsx` (typed entry point with root null check)
+  - `frontend/src/App.tsx` (typed task state, handlers, and CRUD operations)
+  - `frontend/src/components/AddTask.tsx` (typed props and form input events)
+  - `frontend/src/components/TaskList.tsx` (typed props and task item callbacks)
+  - `frontend/src/api.ts` (typed Axios endpoints for `Task[]`, `Task`, `{ message: string }`)
+  - `frontend/vite.config.ts` (TypeScript Vite configuration)
+- Created shared domain model and DTO types in `frontend/src/types/task.ts`:
+  - `Task`: `id`, `title`, `completed`, `createdAt`, `updatedAt`
+  - `CreateTaskInput`: `title`
+  - `UpdateTaskInput`: `title?`, `completed?`
+  - `ApiResponse<T>`, `ApiErrorResponse`
+- Created `frontend/src/vite-env.d.ts` for Vite client environment typing (`VITE_API_URL`).
+- Created `frontend/tsconfig.json` configuring strict TypeScript compilation for React 19 and bundler module resolution.
+- Replaced hardcoded Render backend URL with dynamic `import.meta.env.VITE_API_URL` (defaulting to `http://localhost:5000/api`).
+- Created `frontend/.env.example` with `VITE_API_URL=http://localhost:5000`.
+- Added `.env` and `.env.*` to `frontend/.gitignore` to prevent secret leakage.
+- Transitioned all frontend references from legacy MongoDB `_id` to standard UUID `id` (`task.id`).
+- Maintained existing UI structure, Tailwind CSS styling, and local state architecture without premature UI redesign or third-party state managers.
+- Maintained zero changes to backend source code, Prisma schema, or database migrations.
+- Verified TypeScript typechecking: `npx tsc --noEmit` passed with zero errors.
+- Verified frontend build: `npm run build` (`tsc && vite build`) passed with zero errors, generating optimized bundle.
+- Confirmed zero occurrences of `_id` or hardcoded URLs in `frontend/`.
 
 ## In Progress
-- Awaiting next instruction (frontend TypeScript migration & API integration).
+- Awaiting next instruction (Phase 5: Kanban UI evolution or testing suite).
 
 ## Blocked
 - None.
 
 ## Known Limitations
-- Frontend (`frontend/src/api.js`, `App.jsx`, `TaskList.jsx`) still expects `task._id` and points to remote Render backend URL until frontend modernization is executed.
-- Advanced TaskFlow attributes (`priority`, `tags`, `dueDate`, `status`) will be introduced in subsequent model evolutions as instructed.
+- UI remains the baseline minimal task list until the TaskFlow Kanban evolution phase is authorized.
+- Advanced TaskFlow attributes (`status`, `priority`, `tags`, `dueDate`) will be introduced in subsequent model evolutions as instructed.
 
 ## Verification Status
-- NestJS compilation & build: Passed (`npm run build`).
-- DTO validation & transformation: Verified live over HTTP.
-- UUID validation pipe: Verified live over HTTP.
-- Non-whitelisted field rejection: Verified live over HTTP.
-- Database & Prisma integrity: Unmodified and functioning.
-- Frontend isolation: Verified untouched (0 changes).
+- Frontend TypeScript typechecking: Passed (`npx tsc --noEmit`).
+- Frontend production bundle build: Passed (`npm run build`).
+- `_id` reference scan: 0 occurrences found across frontend.
+- Hardcoded URL scan: 0 occurrences found across frontend.
+- Environment configuration: Verified using `VITE_API_URL`.
+- Backend isolation: 0 files modified in `backend/`.
 
 ## Next Recommended Action
-Proceed to frontend modernization (React + TypeScript, API client update to `task.id` and dynamic `VITE_API_URL`, Kanban UI evolution).
+Proceed to Phase 5: TaskFlow Kanban UI evolution (3-column board, drag-and-drop, priority tags, search/filter bar, Task Insights analytics).

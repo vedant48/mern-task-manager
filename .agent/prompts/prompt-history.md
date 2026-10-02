@@ -368,4 +368,85 @@ API validation hardening successfully implemented and verified end-to-end.
 ### Next step
 Await user instruction for frontend modernization (React + TypeScript Kanban migration) or next planned phase.
 
+## Prompt 8 — Phase 4: Frontend TypeScript Migration & Dynamic API Integration
+
+### User instruction
+Implement Phase 4: Frontend TypeScript migration.
+Requirements:
+1. Convert existing frontend JavaScript/JSX files to TypeScript/TSX where appropriate.
+2. Introduce shared Task interface: id, title, completed, createdAt, updatedAt.
+3. Update Axios API client: use import.meta.env.VITE_API_URL, remove hardcoded Render backend URL, keep paths under /api/tasks.
+4. Add frontend .env.example: VITE_API_URL=http://localhost:5000.
+5. Keep existing UI and functionality intact (do NOT redesign yet).
+6. Update all components to use new `id` field instead of MongoDB `_id`.
+7. Add proper TypeScript types for API responses, component props, task state, form state, API errors.
+8. Do NOT introduce external state-management libraries (Redux, Zustand, React Query); keep local React state.
+9. Do NOT modify backend code.
+10. Do NOT modify Prisma schema or migrations.
+11. Do NOT add authentication or unrelated features.
+12. Update .agent/status.md, .agent/prompts/decisions.md, .agent/prompts/prompt-history.md.
+13. Verify: npm install, npm run build, confirm TypeScript compilation succeeds, confirm no _id references remain, confirm no hardcoded backend URL remains, confirm frontend API configuration uses VITE_API_URL. Do not commit changes. Report files changed, architectural decisions, commands executed, verification results, issues encountered. Stop after Phase 4.
+
+### Agent interpretation
+Migrate the `frontend/` subproject from untyped JavaScript to TypeScript without altering existing visual styling, layout, or component architecture. Introduce `frontend/tsconfig.json` with strict type checking. Create shared types (`Task`, `CreateTaskInput`, `UpdateTaskInput`, `ApiResponse`, `ApiErrorResponse`). Migrate all `.jsx`/`.js` components and configuration to `.tsx`/`.ts` (`main.tsx`, `App.tsx`, `AddTask.tsx`, `TaskList.tsx`, `api.ts`, `vite.config.ts`, `vite-env.d.ts`). Eradicate all `task._id` references in favor of UUID `task.id`. Replace hardcoded Render URLs with `import.meta.env.VITE_API_URL`. Ensure `npm run build` (`tsc && vite build`) passes with zero errors. Preserve backend isolation and leave working tree uncommitted.
+
+### Action taken
+1. Installed `typescript` in `frontend/package.json`.
+2. Created `frontend/tsconfig.json` with strict ES2022 / React-JSX compiler settings.
+3. Created `frontend/src/vite-env.d.ts` for Vite environment variable typing.
+4. Created `frontend/src/types/task.ts` with `Task` interface (`id`, `title`, `completed`, `createdAt`, `updatedAt`), inputs, and response interfaces.
+5. Replaced `frontend/src/api.js` with `frontend/src/api.ts` using `import.meta.env.VITE_API_URL` and typed Axios calls targeting `/api/tasks`.
+6. Created `frontend/src/components/AddTask.tsx` and removed `AddTask.jsx`.
+7. Created `frontend/src/components/TaskList.tsx` replacing `task._id` with `task.id` and removed `TaskList.jsx`.
+8. Created `frontend/src/App.tsx` replacing all `t._id` references with `t.id` and removed `App.jsx`.
+9. Created `frontend/src/main.tsx` and removed `main.jsx`.
+10. Created `frontend/vite.config.ts` and removed `vite.config.js`.
+11. Updated `frontend/index.html` to point to `/src/main.tsx`.
+12. Updated `frontend/package.json` build script to `"tsc && vite build"`.
+13. Created `frontend/.env.example` with `VITE_API_URL=http://localhost:5000`.
+14. Added `.env` and `.env.*` to `frontend/.gitignore`.
+15. Ran `npx tsc --noEmit` and `npm run build` in `frontend/`, verifying clean compilation with 0 errors.
+16. Scanned for `_id` and hardcoded URLs across frontend (confirmed 0 occurrences).
+17. Updated `.agent/status.md`, `.agent/prompts/decisions.md` (Decision 6), and `.agent/prompts/prompt-history.md`.
+
+### Files changed
+- `frontend/package.json` (modified: added typescript devDependency, updated build script)
+- `frontend/package-lock.json` (modified)
+- `frontend/index.html` (modified: referenced /src/main.tsx)
+- `frontend/.gitignore` (modified: added .env patterns)
+- `frontend/.env.example` (created)
+- `frontend/tsconfig.json` (created)
+- `frontend/vite.config.ts` (created)
+- `frontend/src/vite-env.d.ts` (created)
+- `frontend/src/types/task.ts` (created)
+- `frontend/src/api.ts` (created)
+- `frontend/src/main.tsx` (created)
+- `frontend/src/App.tsx` (created)
+- `frontend/src/components/AddTask.tsx` (created)
+- `frontend/src/components/TaskList.tsx` (created)
+- `frontend/vite.config.js` (deleted)
+- `frontend/src/main.jsx` (deleted)
+- `frontend/src/App.jsx` (deleted)
+- `frontend/src/api.js` (deleted)
+- `frontend/src/components/AddTask.jsx` (deleted)
+- `frontend/src/components/TaskList.jsx` (deleted)
+- `.agent/status.md` (updated)
+- `.agent/prompts/decisions.md` (updated)
+- `.agent/prompts/prompt-history.md` (updated)
+
+### Verification
+- `npx tsc --noEmit`: Succeeded with zero errors or warnings.
+- `npm run build` (`tsc && vite build`): Succeeded with zero errors, generating optimized bundle in `dist/`.
+- `grep_search` for `_id` in `frontend/`: 0 matches found.
+- `grep_search` for `onrender.com` in `frontend/`: 0 matches found.
+- Backend isolation: 0 files in `backend/` or Prisma modified.
+- No git commits executed.
+
+### Result
+Frontend TypeScript migration complete. All components strongly typed and operating with standard UUID `task.id` and dynamic environment API configuration.
+
+### Next step
+Await user instructions for Phase 5 (TaskFlow Kanban UI evolution, 3-column workflow board, and Task Insights analytics).
+
+
 

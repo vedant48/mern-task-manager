@@ -135,3 +135,35 @@ Adopt Option 2. Install `class-validator` and `class-transformer`, configure `ap
 - Any unwhitelisted payload property causes an immediate 400 Bad Request.
 - Controllers remain purely HTTP orchestrators while services focus on database and business domain operations.
 
+---
+
+## Decision 6 — Frontend TypeScript Migration and Dynamic Environment API Client
+
+### Context
+The baseline frontend consisted of untyped JavaScript and JSX files (`main.jsx`, `App.jsx`, `AddTask.jsx`, `TaskList.jsx`, `api.js`) that hardcoded a remote Render backend URL and assumed MongoDB `_id` identity keys. Migrating to TypeScript and updating the network client to dynamically target local or cloud environments via `VITE_API_URL` while consuming standard UUID `id` keys is required before evolving the interface into the TaskFlow Kanban board.
+
+### Options considered
+1. **Gradual In-Place Typing with JSDoc**: Add JSDoc annotations to existing `.js`/`.jsx` files.
+   - *Pros*: No file renaming.
+   - *Cons*: Weak type safety, lack of strict build-time type checking, awkward interface definitions.
+2. **Complete TypeScript Conversion with Strict Typecheck in Build Pipeline (Selected)**:
+   - Convert all `.jsx`/`.js` files to `.tsx`/`.ts` (`main.tsx`, `App.tsx`, `AddTask.tsx`, `TaskList.tsx`, `api.ts`, `vite.config.ts`).
+   - Define shared `Task` interface (`id`, `title`, `completed`, `createdAt`, `updatedAt`) in `types/task.ts`.
+   - Configure dynamic `baseURL` in Axios using `import.meta.env.VITE_API_URL`.
+   - Update `package.json` build script to `"tsc && vite build"`.
+
+### Decision
+Adopt Option 2. Fully migrate all frontend source files to TypeScript, eliminate all references to MongoDB `_id` in favor of UUID `id`, remove hardcoded backend URLs, provide `frontend/.env.example`, and enforce type safety through `tsc` during the Vite build.
+
+### Reason
+- Eliminates silent runtime errors caused by mismatched property names (`_id` vs `id`).
+- Decouples the frontend from a single hardcoded backend URL, enabling local development and flexible cloud deployment via environment variables.
+- Establishes a solid, typed foundation for subsequent TaskFlow Kanban state management and modal interactions.
+- Preserves the existing UI and component hierarchy without introducing premature redesign risks or heavyweight dependencies.
+
+### Consequences
+- Frontend codebase is 100% TypeScript with strict compile-time verification.
+- Components cleanly consume `task.id`.
+- Build fails fast if any prop or API shape regression is introduced.
+
+
