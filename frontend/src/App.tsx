@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getTasks, addTask, updateTask, deleteTask } from "./api";
 import AddTask from "./components/AddTask";
 import KanbanBoard from "./components/KanbanBoard";
-import { Task, CreateTaskInput, UpdateTaskInput } from "./types/task";
+import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput } from "./types/task";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -34,6 +34,7 @@ export default function App() {
       setTasks((prev) => [res.data, ...prev]);
     } catch (err: unknown) {
       console.error("Error adding task:", err);
+      setError("Failed to add task. Please try again.");
       throw err;
     }
   };
@@ -44,6 +45,7 @@ export default function App() {
       setTasks((prev) => prev.map((t) => (t.id === id ? res.data : t)));
     } catch (err: unknown) {
       console.error("Error updating task:", err);
+      setError("Failed to update task. Please try again.");
       throw err;
     }
   };
@@ -54,7 +56,54 @@ export default function App() {
       setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (err: unknown) {
       console.error("Error deleting task:", err);
+      setError("Failed to delete task. Please try again.");
       throw err;
+    }
+  };
+
+  const handleDropTask = async (
+    taskId: string,
+    targetStatus: TaskStatus
+  ): Promise<void> => {
+    const taskToMove = tasks.find((t) => t.id === taskId);
+    // Prevent duplicate status requests when dropped into its current column
+    if (!taskToMove || taskToMove.status === targetStatus) {
+      return;
+    }
+
+    // Capture snapshot for rollback
+    const previousTasks = [...tasks];
+
+    // Optimistically update UI state
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            status: targetStatus,
+            completed: targetStatus === "DONE",
+          };
+        }
+        return t;
+      })
+    );
+    setError(null);
+
+    try {
+      // Persist the status change via REST API
+      const res = await updateTask(taskId, { status: targetStatus });
+      // Synchronize with server response
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? res.data : t)));
+    } catch (err: unknown) {
+      console.error("Error moving task:", err);
+      // Rollback to previous state on failure
+      setTasks(previousTasks);
+      setError(
+        `Failed to move task "${taskToMove.title}" to ${targetStatus.replace(
+          "_",
+          " "
+        )}. Changes were rolled back.`
+      );
     }
   };
 
@@ -100,12 +149,21 @@ export default function App() {
         {error && (
           <div className="mb-6 p-3.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center justify-between">
             <span>{error}</span>
-            <button
-              onClick={fetchTasks}
-              className="text-xs bg-red-100 hover:bg-red-200 px-2.5 py-1 rounded font-semibold text-red-800 cursor-pointer"
-            >
-              Retry
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchTasks}
+                className="text-xs bg-red-100 hover:bg-red-200 px-2.5 py-1 rounded font-semibold text-red-800 cursor-pointer"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => setError(null)}
+                className="text-xs text-red-600 hover:text-red-800 font-bold px-1.5 py-0.5 cursor-pointer"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
 
@@ -123,6 +181,7 @@ export default function App() {
             tasks={tasks}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            onDropTask={handleDropTask}
           />
         )}
       </div>

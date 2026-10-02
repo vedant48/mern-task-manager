@@ -1,66 +1,63 @@
 # Project Status
 
 ## Current Phase
-Phase 5B Complete: Basic TaskFlow Kanban UI (3-Column Layout, Status Transitions & Inline Card Actions)
+Phase 5C Complete: Native HTML5 Drag-and-Drop (Column Transitions, Optimistic Updates & Error Rollback)
 
 ## Completed
-- Extended Frontend Shared Domain Types (`frontend/src/types/task.ts`):
-  - Added `TaskStatus` (`TODO`, `IN_PROGRESS`, `DONE`) and `TaskPriority` (`LOW`, `MEDIUM`, `HIGH`).
-  - Extended `CreateTaskInput` and `UpdateTaskInput` to support optional status, priority, and nullable dueDate.
-- Designed & Implemented 3-Column Kanban Board (`frontend/src/components/KanbanBoard.tsx`):
-  - Column 1: `TODO` → "To Do".
-  - Column 2: `IN_PROGRESS` → "In Progress".
-  - Column 3: `DONE` → "Done".
-  - Built with responsive Tailwind CSS grid (`grid-cols-1 md:grid-cols-3 gap-5 items-start`).
-- Created Kanban Column Component (`frontend/src/components/KanbanColumn.tsx`):
-  - Renders column header with semantic title, live task count badge, and color accent bar.
-  - Renders list of `TaskCard` components or an empty column state indicator.
-- Created Task Card Component (`frontend/src/components/TaskCard.tsx`):
-  - Displays title (with strike-through styling when `DONE`).
-  - Displays priority badge (`LOW`, `MEDIUM`, `HIGH`) with curated, accessible Tailwind badge styles.
-  - Displays formatted due date tag (`📅 Mon DD, YYYY`) when present.
-  - Interactive status dropdown selector enabling direct status transitions via `onUpdate`.
-  - Inline editing interface allowing updates to title, status, priority, and due date.
-  - Delete action button triggering `onDelete(task.id)`.
-- Updated Task Creation Component (`frontend/src/components/AddTask.tsx`):
-  - Primary title input utilizing backend defaults (`TODO` status, `MEDIUM` priority, `null` dueDate).
-  - Expandable options drawer for setting priority, status, and due date at creation time.
-- Updated Application Root (`frontend/src/App.tsx`):
-  - Clean TaskFlow header with live summary metric chips (Total, To Do, In Progress, Done counts).
-  - Connected state handlers (`fetchTasks`, `handleAdd`, `handleUpdate`, `handleDelete`) with error handling and retry mechanism.
-  - Replaced legacy single-column list with `KanbanBoard`.
-- Cleaned Legacy Components:
-  - Removed obsolete `frontend/src/components/TaskList.tsx`.
+- Implemented Native HTML5 Drag Source (`frontend/src/components/TaskCard.tsx`):
+  - Made cards draggable via HTML5 `draggable={!isEditing}` attribute.
+  - Attached `onDragStart` populating `text/plain` with task ID and setting `effectAllowed = 'move'`.
+  - Added subtle visual dragging state (`opacity-40 scale-[0.98] border-dashed border-blue-400`).
+  - Protected action buttons (Edit, Delete, and Status dropdown) from triggering card drag events.
+- Implemented Native HTML5 Drop Target (`frontend/src/components/KanbanColumn.tsx`):
+  - Attached `onDragOver`, `onDragEnter`, `onDragLeave`, and `onDrop`.
+  - Utilized a drag counter ref to prevent drag-leave flickering when hovering over nested child elements.
+  - Added clear visual indication when a column is an active drop target (`ring-2 ring-blue-400 bg-blue-50/70`, header indicator, and dashed drop cue).
+- Orchestrated Drag-and-Drop in Board (`frontend/src/components/KanbanBoard.tsx`):
+  - Forwarded `onDropTask` callback from `App` to each `KanbanColumn`.
+- Implemented Optimistic State Machine & Rollback (`frontend/src/App.tsx`):
+  - Added `handleDropTask(taskId, targetStatus)`:
+    - Suppresses duplicate status updates when a task is dropped into its current column.
+    - Captures an immutable snapshot of tasks prior to mutation.
+    - Immediately updates React state optimistically (synchronizing `completed: targetStatus === 'DONE'`).
+    - Persists status change via existing REST API (`PUT /api/tasks/:id` with `{ status: targetStatus }`).
+    - Reconciles state with authoritative server response.
+    - On API or network failure, automatically rolls back to snapshot and displays user-visible error banner with Retry and Dismiss controls.
 - Strict Constraint Adherence:
-  - Zero drag-and-drop code introduced.
-  - Zero analytics code introduced.
-  - Zero external state management libraries added (pure React state and props).
+  - Zero external drag-and-drop libraries installed.
   - Zero backend or Prisma schema/migration files modified.
+  - Preserved backend two-way status/completed synchronization.
+  - Reused existing TypeScript types and Axios API client.
 - Verified Compilation & Linters:
-  - `npx tsc --noEmit` and `npm run build` in `frontend/` passed with 0 errors.
+  - `npm run build` in `frontend/` passed in 1.18s with 0 errors.
   - `npm run lint` in `frontend/` passed with 0 errors.
   - `npm run build` in `backend/` passed with 0 errors.
-  - Verified live CRUD operations against PostgreSQL.
+  - Automated state machine tests passed (duplicate suppression, optimistic updates, completed synchronization, and API failure rollback).
+  - Live HTTP status transitions verified against running backend and database.
 
 ## In Progress
-- Awaiting next instruction (Phase 5C: Native HTML5 Drag-and-Drop or Phase 6: Task Insights Analytics).
+- Awaiting next instruction (Phase 6: TaskFlow Task Insights / Analytics Dashboard).
 
 ## Blocked
 - None.
 
 ## Known Limitations
-- Drag-and-drop transitions are not yet enabled (status changes occur via card dropdown or edit modal).
-- Analytics dashboard (Task Insights) not yet implemented.
+- Analytics dashboard (Task Insights) not yet implemented (scheduled for Phase 6).
+- Search and tag filtering not yet implemented (scheduled for Phase 7).
 
 ## Verification Status
 - Frontend TypeScript & Vite build: Passed (`tsc && vite build`).
 - Frontend ESLint: Passed (`eslint .` clean with 0 warnings/errors).
 - Backend NestJS build: Passed (`nest build`).
 - Database & Backend isolation: Confirmed 0 files touched in `backend/` or `prisma/`.
-- UI Column Segregation: Verified tasks populate To Do, In Progress, and Done columns according to `status`.
-- Card Presentation: Verified title, priority badge, and formatted due date display accurately.
-- Full CRUD Lifecycle: Verified creation with defaults, status transitions, inline updates, and deletion.
+- Drag-and-Drop:
+  - `TODO` → `IN_PROGRESS`: Verified (status updated, `completed: false`).
+  - `IN_PROGRESS` → `DONE`: Verified (status updated, `completed: true`).
+  - `DONE` → `TODO`: Verified (status updated, `completed: false`).
+- Duplicate Drag Suppression: Verified dropping in same column triggers zero network requests.
+- Failure Rollback: Verified simulated API failure restores state and shows alert banner.
 
 ## Next Recommended Action
-Proceed to Phase 5C (Native Drag-and-Drop Kanban interactions) or Phase 6 (Task Insights Analytics dashboard).
+Proceed to Phase 6: Task Insights / Analytics Dashboard (total tasks, completion rate, overdue tasks, in-progress count, priority distribution).
+
 

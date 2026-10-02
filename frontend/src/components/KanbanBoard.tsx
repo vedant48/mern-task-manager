@@ -1,13 +1,19 @@
-import { Task, UpdateTaskInput } from '../types/task';
+import { Task, TaskStatus, UpdateTaskInput } from '../types/task';
 import KanbanColumn from './KanbanColumn';
 
 interface KanbanBoardProps {
   tasks: Task[];
   onUpdate: (id: string, updates: UpdateTaskInput) => Promise<void> | void;
   onDelete: (id: string) => Promise<void> | void;
+  onDropTask: (taskId: string, targetStatus: TaskStatus) => Promise<void> | void;
 }
 
-export default function KanbanBoard({ tasks, onUpdate, onDelete }: KanbanBoardProps) {
+export default function KanbanBoard({
+  tasks,
+  onUpdate,
+  onDelete,
+  onDropTask,
+}: KanbanBoardProps) {
   const todoTasks = tasks.filter((t) => t.status === 'TODO');
   const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS');
   const doneTasks = tasks.filter((t) => t.status === 'DONE');
@@ -21,6 +27,7 @@ export default function KanbanBoard({ tasks, onUpdate, onDelete }: KanbanBoardPr
         accentColor="bg-slate-100/70"
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onDropTask={onDropTask}
       />
       <KanbanColumn
         status="IN_PROGRESS"
@@ -29,6 +36,7 @@ export default function KanbanBoard({ tasks, onUpdate, onDelete }: KanbanBoardPr
         accentColor="bg-blue-50/70"
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onDropTask={onDropTask}
       />
       <KanbanColumn
         status="DONE"
@@ -37,6 +45,7 @@ export default function KanbanBoard({ tasks, onUpdate, onDelete }: KanbanBoardPr
         accentColor="bg-emerald-50/70"
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onDropTask={onDropTask}
       />
     </div>
   );

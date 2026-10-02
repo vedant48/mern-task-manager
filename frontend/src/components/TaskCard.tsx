@@ -9,6 +9,7 @@ interface TaskCardProps {
 
 export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [editPriority, setEditPriority] = useState<TaskPriority>(task.priority);
   const [editDueDate, setEditDueDate] = useState(
@@ -16,6 +17,20 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   );
   const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData('text/plain', task.id);
+    e.dataTransfer.setData(
+      'application/json',
+      JSON.stringify({ id: task.id, status: task.status })
+    );
+    e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +162,17 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
   }
 
   return (
-    <div className="bg-white p-3.5 rounded-lg border border-gray-200 shadow-xs hover:shadow-sm transition-shadow space-y-2.5">
+    <div
+      draggable={!isEditing}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      data-testid={`task-card-${task.id}`}
+      className={`bg-white p-3.5 rounded-lg border transition-all space-y-2.5 ${
+        isDragging
+          ? 'opacity-40 scale-[0.98] border-dashed border-blue-400 shadow-none'
+          : 'border-gray-200 shadow-xs hover:shadow-sm cursor-grab active:cursor-grabbing'
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <h3
           className={`text-sm font-medium leading-snug break-words ${
@@ -159,6 +184,8 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             onClick={() => setIsEditing(true)}
             title="Edit task"
             className="text-gray-400 hover:text-gray-600 p-1 text-xs rounded hover:bg-gray-100 cursor-pointer"
@@ -167,6 +194,8 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
           </button>
           <button
             type="button"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             onClick={() => onDelete(task.id)}
             title="Delete task"
             className="text-gray-400 hover:text-red-600 p-1 text-xs rounded hover:bg-gray-100 cursor-pointer"
@@ -198,6 +227,8 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
         <select
           value={task.status}
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
           onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}
           aria-label="Change status"
           className="text-[11px] border border-gray-200 rounded px-1.5 py-0.5 bg-gray-50 text-gray-700 hover:bg-gray-100 cursor-pointer"

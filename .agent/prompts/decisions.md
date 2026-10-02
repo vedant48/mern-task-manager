@@ -227,6 +227,39 @@ Adopt Option 2. Build the Kanban board using a clean modular hierarchy (`App` ->
 - Status transitions are immediately functional via the card status dropdown selector or inline editor.
 - The UI is fully prepared for future phases (Phase 5C native drag-and-drop and Phase 6 analytics dashboard) without architectural refactoring.
 
+---
 
+## Decision 9 — Native HTML5 Drag-and-Drop with Optimistic Updates & Failure Rollback
 
+### Context
+Phase 5C requires enabling users to drag task cards between Kanban columns (`TODO`, `IN_PROGRESS`, `DONE`) and persist the status change via the existing REST API. The solution must strictly use native HTML5 drag-and-drop APIs without external libraries, provide responsive visual feedback, suppress duplicate requests when dropped in the current column, and optimistically update the UI with robust error rollback if the network or server fails.
 
+### Options considered
+1. **Third-Party Drag-and-Drop Libraries (`dnd-kit`, `@hello-pangea/dnd`)**:
+   - *Pros*: Built-in physics, animations, and touch abstractions.
+   - *Cons*: Introduces substantial bundle weight, complex DOM wrapping, potential React 19 compatibility friction, and violates the explicit constraint against installing drag-and-drop libraries.
+2. **Native HTML5 Drag and Drop with Drag Counter Ref & Optimistic State Machine (Selected)**:
+   - Make `TaskCard` draggable with `draggable={!isEditing}`, `onDragStart`, and `onDragEnd`.
+   - Make `KanbanColumn` a drop target using `onDragOver`, `onDragEnter`, `onDragLeave`, and `onDrop`.
+   - Use a `dragCounter` ref in `KanbanColumn` to reliably track hover state without flickering over child card elements.
+   - Orchestrate state in `App.tsx` via `handleDropTask`:
+     - Discard drops in the same column (zero network calls).
+     - Snapshot task state.
+     - Optimistically mutate UI state and clear errors.
+     - Dispatch `PUT /api/tasks/:id` with `{ status: targetStatus }`.
+     - Reconcile with server response or revert to snapshot on failure while alerting the user.
+
+### Decision
+Adopt Option 2. Implement native HTML5 Drag and Drop across `TaskCard` and `KanbanColumn`, with centralized optimistic update and rollback logic in `App.tsx`.
+
+### Reason
+- Zero new bundle dependencies or runtime overhead.
+- Native browser performance with standard drag data transfer.
+- Clean separation between drag UI events and API persistence logic.
+- Guarantees immediate UI responsiveness (optimistic update) with foolproof recovery (state rollback) if the backend is unreachable.
+
+### Consequences
+- Dragging cards between columns immediately re-sorts them into the destination column.
+- Backend status-completed synchronization (`DONE` <-> `completed: true`) works automatically.
+- Dropping into the current column produces zero network overhead.
+- Accidental dragging during inline card editing is fully disabled.
