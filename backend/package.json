@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "NestJS TaskFlow Backend",
+  "description": "NestJS Taskly Backend",
   "author": "",
   "private": true,
   "license": "ISC",

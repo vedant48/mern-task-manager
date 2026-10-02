@@ -1,20 +1,20 @@
-# Render Blueprint specification for TaskFlow (Full-Stack MERN / NestJS + PostgreSQL + Vite)
+# Render Blueprint specification for Taskly (Full-Stack MERN / NestJS + PostgreSQL + Vite)
 # Documentation: https://render.com/docs/blueprint-spec
 
 version: "1"
 
 databases:
   # Managed PostgreSQL Database
-  - name: taskflow-db
+  - name: taskly-db
     databaseName: taskmanager
-    user: taskflow
+    user: taskly
     plan: free
     region: oregon # adjust as needed (e.g. oregon, frankfurt, ohio, singapore)
 
 services:
   # Backend NestJS Web Service
   - type: web
-    name: taskflow-backend
+    name: taskly-backend
     runtime: node
     plan: free
     region: oregon
@@ -25,7 +25,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: taskflow-db
+          name: taskly-db
           property: connectionString
       - key: NODE_ENV
         value: production
@@ -34,7 +34,7 @@ services:
 
   # Frontend React 19 + TypeScript + Vite Static Site
   - type: web
-    name: taskflow-frontend
+    name: taskly-frontend
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -45,7 +45,7 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Set this to your deployed backend URL (e.g., https://taskflow-backend.onrender.com)
-      # Render will prompt for this value when creating the Blueprint instance
+      # Set this to your deployed backend URL (e.g., https://taskly-backend.onrender.com)
       - key: VITE_API_URL
-        sync: false
+        value: https://taskly-backend.onrender.com
+

@@ -253,7 +253,7 @@ export default function App() {
             <div className="flex items-center gap-2.5">
               <span className="text-2xl">📋</span>
               <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                TaskFlow
+                Taskly
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">

@@ -6,20 +6,20 @@ Phase 7.5 Complete: Render Deployment Preparation & Blueprint
 ## Completed
 - Render Infrastructure Blueprint Specification (`render.yaml`):
   - Defined 3-tier architecture as code:
-    1. Managed PostgreSQL database (`taskflow-db`, database `taskmanager`, user `taskflow`, free plan).
-    2. Backend NestJS Web Service (`taskflow-backend`, Node runtime, free plan, `rootDir: backend`).
-    3. Frontend Vite Static Site (`taskflow-frontend`, static runtime, `rootDir: frontend`, `staticPublishPath: ./dist`).
+    1. Managed PostgreSQL database (`taskly-db`, database `taskmanager`, user `taskly`, free plan).
+    2. Backend NestJS Web Service (`taskly-backend`, Node runtime, free plan, `rootDir: backend`).
+    3. Frontend Vite Static Site (`taskly-frontend`, static runtime, `rootDir: frontend`, `staticPublishPath: ./dist`).
   - Automated database migration and generation pipeline:
     - Build command: `npm install && npx prisma generate && npm run build`
     - Start command: `npx prisma migrate deploy && npm run start:prod` (applies migrations at container boot before HTTP server starts, 100% compatible with Render Free Tier)
     - Health check endpoint: `/api/tasks`
   - Dynamic service linking via Render environment variables:
-    - Injected `DATABASE_URL` directly from `taskflow-db` connectionString reference.
+    - Injected `DATABASE_URL` directly from `taskly-db` connectionString reference.
     - Protected production port binding listening on Render's `$PORT` (`0.0.0.0:${PORT}`).
   - Static site configuration:
     - Publish directory configured to `./dist`.
     - SPA client-side routing rewrite rule: `routes: [{ type: rewrite, source: /*, destination: /index.html }]`.
-    - Declared `VITE_API_URL` with `sync: false` to allow prompting/configuring public backend URL without hardcoding.
+    - Declared `VITE_API_URL` with default `value: https://taskly-backend.onrender.com`.
 - Production Hardening & Environment Isolation:
   - Created root `.gitignore` ignoring `node_modules/`, `dist/`, `.env`, `.env.*` (while keeping `.env.example`), and OS/IDE artifacts.
   - Updated `backend/.gitignore` ignoring `.env.*` while explicitly preserving `!.env.example`.

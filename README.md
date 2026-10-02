@@ -1,4 +1,4 @@
-# 📋 TaskFlow — Full-Stack Kanban & Task Management Platform
+# 📋 Taskly — Full-Stack Kanban & Task Management Platform
 
 <p align="center">
   <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
@@ -15,7 +15,7 @@
 
 ## 📖 Overview
 
-**TaskFlow** is a modern, enterprise-grade task management and Kanban platform. Originally evolved from a simple MERN to-do list, TaskFlow has been systematically refactored into a strongly-typed, production-hardened full-stack application featuring:
+**Taskly** is a modern, enterprise-grade task management and Kanban platform. Originally evolved from a simple MERN to-do list, Taskly has been systematically refactored into a strongly-typed, production-hardened full-stack application featuring:
 
 - **Backend**: **NestJS 10** + **TypeScript** with modular architecture, declarative DTO validation, and **Prisma 7 ORM** (`@prisma/adapter-pg` native driver adapter) running on **PostgreSQL**.
 - **Frontend**: **React 19** + **TypeScript** + **Tailwind CSS v4** + **Vite**, featuring an interactive 3-column Kanban board, native HTML5 drag-and-drop, Task Insights analytics, and customizable color-coded labels.
@@ -173,7 +173,7 @@ Start the Vite development server:
 ```bash
 npm run dev
 ```
-Open your browser at `http://localhost:5173` to explore TaskFlow!
+Open your browser at `http://localhost:5173` to explore Taskly!
 
 ---
 
@@ -208,9 +208,9 @@ All endpoints are mounted under the `/api` global prefix.
 The entire full-stack application is defined as Infrastructure as Code in [`render.yaml`](render.yaml).
 
 ### Architecture on Render:
-1. **`taskflow-db`**: Managed PostgreSQL database (`taskmanager`).
-2. **`taskflow-backend`**: Node.js Web Service running NestJS (`rootDir: backend`, port `10000`).
-3. **`taskflow-frontend`**: Static Site running Vite SPA (`rootDir: frontend`, publish `./dist`, rewrite `/* -> /index.html`).
+1. **`taskly-db`**: Managed PostgreSQL database (`taskmanager`).
+2. **`taskly-backend`**: Node.js Web Service running NestJS (`rootDir: backend`, port `10000`).
+3. **`taskly-frontend`**: Static Site running Vite SPA (`rootDir: frontend`, publish `./dist`, rewrite `/* -> /index.html`).
 
 ### Deploy in 3 Steps:
 1. Push your repository to GitHub.
