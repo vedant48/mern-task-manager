@@ -448,5 +448,77 @@ Frontend TypeScript migration complete. All components strongly typed and operat
 ### Next step
 Await user instructions for Phase 5 (TaskFlow Kanban UI evolution, 3-column workflow board, and Task Insights analytics).
 
+## Prompt 9 — Phase 5A: Task Domain & API Extension (Status, Priority, DueDate)
+
+### User instruction
+Implement Phase 5A: Task domain/API extension. Follow .agent docs. Goal: Extend Task domain to support upcoming Kanban workflow without changing frontend UI yet. Add fields: status (enum: TODO, IN_PROGRESS, DONE; default: TODO), priority (enum: LOW, MEDIUM, HIGH; default: MEDIUM), dueDate (optional DateTime). Requirements:
+1. Update Prisma schema and create new Prisma migration.
+2. Use Prisma 7.x only.
+3. Update DTOs with validation.
+4. Update TasksService and API responses.
+5. Preserve existing CRUD endpoints.
+6. Keep controllers thin.
+7. Do not implement Kanban UI.
+8. Do not implement drag-and-drop.
+9. Do not add analytics yet.
+10. Do not modify unrelated frontend files.
+Validation: status accepts TODO, IN_PROGRESS, DONE; priority accepts LOW, MEDIUM, HIGH; dueDate must be valid date when provided; existing tasks remain valid.
+Verification: run migration, prisma migrate status, npm run build, test GET/POST/PUT/DELETE against PostgreSQL, test invalid status, test invalid priority, test invalid dueDate, verify existing CRUD works. Update .agent/status.md, decisions.md, prompt-history.md. Do not commit anything. Stop after Phase 5A.
+
+### Agent interpretation
+Evolve the relational data model and NestJS backend to support Kanban workflows by adding PostgreSQL-native enums `TaskStatus` and `TaskPriority` alongside an optional `dueDate` timestamp. Run the Prisma migration with defaults to ensure existing records remain fully valid. Extend `CreateTaskDto` and `UpdateTaskDto` with enum and ISO-date validators. Enhance `TasksService` with two-way synchronization between `completed` and `status` so legacy client toggles (`completed: true`) automatically map to `DONE`. Keep the controller thin and REST routes unchanged. Update frontend shared domain types in `types/task.ts` without touching UI components. Verify live HTTP endpoints and build compilation.
+
+### Action taken
+1. Updated `backend/prisma/schema.prisma` with `TaskStatus` enum (`TODO`, `IN_PROGRESS`, `DONE`), `TaskPriority` enum (`LOW`, `MEDIUM`, `HIGH`), and added `status`, `priority`, and nullable `dueDate` to `Task` model.
+2. Validated schema via `npx prisma validate`.
+3. Created and executed migration `20261002195351_add_task_status_priority_due_date` via `npx prisma migrate dev`.
+4. Regenerated Prisma Client (`npx prisma generate`).
+5. Verified database sync via `npx prisma migrate status`.
+6. Updated `CreateTaskDto` and `UpdateTaskDto` with `@IsEnum` and `@IsISO8601` validators.
+7. Updated `TasksService` (`create`, `update`, `findAll`) to handle new fields and synchronize `completed` and `status`.
+8. Updated `frontend/src/types/task.ts` to include `status`, `priority`, and `dueDate` in `Task`, `CreateTaskInput`, and `UpdateTaskInput`.
+9. Executed `npm run build` in both `backend` and `frontend`.
+10. Verified live HTTP endpoints against PostgreSQL:
+    - Default `POST /api/tasks` assigns `status: TODO`, `priority: MEDIUM`, `dueDate: null`, `completed: false`.
+    - Explicit `POST` creates task with custom status, priority, and due date.
+    - Invalid status returns 400 Bad Request (`Status must be one of: TODO, IN_PROGRESS, DONE`).
+    - Invalid priority returns 400 Bad Request (`Priority must be one of: LOW, MEDIUM, HIGH`).
+    - Invalid dueDate returns 400 Bad Request (`DueDate must be a valid ISO 8601 date string`).
+    - `PUT /api/tasks/:id` updates status/priority/dueDate and synchronizes `completed` flag.
+    - `DELETE /api/tasks/:id` deletes task.
+11. Updated `.agent/status.md`, `.agent/prompts/decisions.md` (Decision 7), and `.agent/prompts/prompt-history.md`.
+
+### Files changed
+- `backend/prisma/schema.prisma` (modified)
+- `backend/prisma/migrations/20261002195351_add_task_status_priority_due_date/migration.sql` (created)
+- `backend/src/tasks/dto/create-task.dto.ts` (modified)
+- `backend/src/tasks/dto/update-task.dto.ts` (modified)
+- `backend/src/tasks/tasks.service.ts` (modified)
+- `frontend/src/types/task.ts` (modified)
+- `.agent/status.md` (updated)
+- `.agent/prompts/decisions.md` (updated)
+- `.agent/prompts/prompt-history.md` (updated)
+
+### Verification
+- `npx prisma migrate status`: Database schema up to date (2 migrations).
+- `npm run build` (backend): Succeeded with zero errors.
+- `npm run build` (frontend): Succeeded with zero errors.
+- Live HTTP validation:
+  - Default creation: 201 Created with schema defaults.
+  - Invalid status: Rejected (400 Bad Request).
+  - Invalid priority: Rejected (400 Bad Request).
+  - Invalid dueDate: Rejected (400 Bad Request).
+  - Two-way status/completed toggle: Verified 200 OK.
+  - Existing CRUD routes: 100% operational.
+- Frontend isolation: Zero UI components modified.
+- No git commits executed.
+
+### Result
+Phase 5A completed and verified. Task domain and backend API fully support Kanban workflows with relational integrity and backward compatibility.
+
+### Next step
+Await user instructions for Phase 5B (TaskFlow Kanban UI evolution: 3-column workflow board, drag-and-drop, priority badges, filters, and Task Insights).
+
+
 
 

@@ -6,12 +6,27 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model Task {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   title     String
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  completed Boolean      @default(false)
+  status    TaskStatus   @default(TODO)
+  priority  TaskPriority @default(MEDIUM)
+  dueDate   DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@map("tasks")
 }

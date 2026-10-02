@@ -166,4 +166,36 @@ Adopt Option 2. Fully migrate all frontend source files to TypeScript, eliminate
 - Components cleanly consume `task.id`.
 - Build fails fast if any prop or API shape regression is introduced.
 
+---
+
+## Decision 7 — Expand Task Domain with PostgreSQL Enums for Status and Priority with Two-Way State Synchronization
+
+### Context
+To support the upcoming TaskFlow Kanban board (columns: `TODO`, `IN_PROGRESS`, `DONE`, priority badges: `LOW`, `MEDIUM`, `HIGH`, and optional deadlines) while preserving existing clients and database integrity, the domain model requires explicit enumerated fields and nullable date types without breaking current API consumers that toggle the boolean `completed` field.
+
+### Options considered
+1. **String Columns with Loose Validation**: Store `status` and `priority` as plain `VARCHAR` or `TEXT` columns in PostgreSQL.
+   - *Pros*: Flexible.
+   - *Cons*: Weak data integrity at the database layer, prone to invalid state insertion.
+2. **PostgreSQL Native ENUM Types with Two-Way Completed Synchronization (Selected)**:
+   - Create native PostgreSQL `TaskStatus` (`TODO`, `IN_PROGRESS`, `DONE`) and `TaskPriority` (`LOW`, `MEDIUM`, `HIGH`) enums via Prisma schema.
+   - Add nullable `dueDate DateTime?`.
+   - Provide defaults (`status: TODO`, `priority: MEDIUM`) ensuring all existing rows remain valid.
+   - Harmonize `status` and `completed` in `TasksService` (`status === DONE` <-> `completed === true`).
+   - Validate input with `@IsEnum` and `@IsISO8601` in DTOs.
+
+### Decision
+Adopt Option 2. Create PostgreSQL enums `TaskStatus` and `TaskPriority` via migration `20261002195351_add_task_status_priority_due_date`, configure `@IsEnum` and `@IsISO8601` in DTOs, and implement two-way synchronization in `TasksService` between `completed` and `status`.
+
+### Reason
+- Enforces relational data integrity at the database level.
+- Guarantees backward compatibility: existing frontend components toggling `{ completed: !task.completed }` automatically update `status` to `DONE` or `TODO`.
+- Sets a reliable foundation for the Kanban board columns without requiring a breaking change to the REST API.
+
+### Consequences
+- Database schema strictly validates status and priority values.
+- New task creation defaults to `TODO` status and `MEDIUM` priority with `dueDate: null`.
+- API responses include full Kanban metadata (`status`, `priority`, `dueDate`).
+
+
 

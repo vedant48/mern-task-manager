@@ -1,5 +1,13 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
+import { TaskStatus, TaskPriority } from '../enums/task.enums';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -11,4 +19,20 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsBoolean({ message: 'Completed must be a boolean' })
   completed?: boolean;
+
+  @IsOptional()
+  @IsEnum(TaskStatus, {
+    message: 'Status must be one of: TODO, IN_PROGRESS, DONE',
+  })
+  status?: TaskStatus;
+
+  @IsOptional()
+  @IsEnum(TaskPriority, {
+    message: 'Priority must be one of: LOW, MEDIUM, HIGH',
+  })
+  priority?: TaskPriority;
+
+  @IsOptional()
+  @IsISO8601({}, { message: 'DueDate must be a valid ISO 8601 date string' })
+  dueDate?: string;
 }
