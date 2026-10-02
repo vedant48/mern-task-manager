@@ -1,73 +1,73 @@
 # Project Status
 
 ## Current Phase
-Phase 5D Complete: Task CRUD Modal & Client-Side Search/Filter Controls
+Phase 6 Complete: TaskFlow Task Insights / Analytics Dashboard
 
 ## Completed
-- Created Reusable Task Modal (`frontend/src/components/TaskModal.tsx`):
-  - Unified dialog supporting both Create (`task = null`) and Edit (`task = Task`) workflows.
-  - Fields: `title` (required, trimmed), `status` (To Do, In Progress, Done), `priority` (Low, Medium, High), `dueDate` (optional date picker).
-  - Client-side input validation preventing submission of empty or whitespace-only titles.
-  - Robust API failure handling: displays clear inline error message and preserves modal open state on network/server errors.
-  - Keyboard accessible: closes on `Escape` key and backdrop click.
-- Created Search & Filter Controls (`frontend/src/components/TaskFilterBar.tsx`):
-  - Case-insensitive client-side search by task title (zero network requests per keystroke).
-  - Priority filter: `All Priorities`, `Low Priority`, `Medium Priority`, `High Priority`.
-  - Status filter: `All Statuses`, `To Do`, `In Progress`, `Done`.
-  - Integrated "Add Task" button opening the task creation modal.
-  - "Reset Filters" action button visible when search or filter parameters are active.
-  - Filter counter showing matching vs. total task counts (`Showing X of Y tasks`).
-- Streamlined Task Card Component (`frontend/src/components/TaskCard.tsx`):
-  - Removed redundant inline edit state and form inputs.
-  - Exposed clean `onEdit(task)` action triggering `TaskModal` in edit mode.
-  - Maintained fast status dropdown selector, delete action, and HTML5 drag-and-drop capabilities.
-- Removed Obsolete Creation UI:
-  - Deleted `frontend/src/components/AddTask.tsx`.
-- Integrated Board Filtering & Empty States (`frontend/src/App.tsx`, `KanbanBoard.tsx`, `KanbanColumn.tsx`):
-  - Maintained 3-column Kanban layout across all filter states.
-  - Configured 3 distinct empty states:
-    1. Global empty board: "No tasks yet. Click 'Add Task' to create your first task!".
-    2. Filtered empty board: "No tasks match your current search and filter criteria" with "Reset Filters" button.
-    3. Per-column empty state: "No matching tasks in {column}" when filtered, or "No tasks in {column}".
-- Preserved Drag-and-Drop & API Synchronization:
-  - Full card dragging between columns persists via `PUT /api/tasks/:id`.
-  - Two-way completed flag synchronization intact (`DONE` <-> `completed: true`).
-  - API rollback and duplicate drop suppression preserved.
-- Strict Constraint Adherence:
-  - Zero modifications to `backend/` or Prisma schema/migrations.
-  - Zero external UI or state libraries introduced (pure React state + Tailwind CSS).
-  - Zero occurrences of `_id` in frontend.
+- Created Reusable Task Insights Dashboard (`frontend/src/components/TaskInsights.tsx`):
+  - Metrics calculated and displayed:
+    - Total Tasks
+    - To Do Tasks (count and percentage)
+    - In Progress Tasks (count and percentage)
+    - Completed Tasks (count and indicator)
+    - Completion Rate (%) with an animated Tailwind progress bar
+    - Overdue Tasks (count with actionable alert badge)
+  - Priority Distribution breakdown:
+    - Low priority count (slate indicator)
+    - Medium priority count (amber indicator)
+    - High priority count (red indicator)
+    - Guaranteed invariant: `low + medium + high === totalTasks`
+  - Accurate Overdue Logic:
+    - Task is flagged overdue strictly when `dueDate` exists, `dueDate < now`, and `status !== 'DONE'`.
+    - Completed tasks (`status === 'DONE'`) are guaranteed to never be counted as overdue regardless of due date.
+- Seamless UI Integration (`frontend/src/App.tsx`):
+  - Placed `TaskInsights` naturally above the Kanban board and below `TaskFilterBar`.
+  - Responsive light-theme design matching TaskFlow aesthetics (2 cols on mobile, 3 on tablet, 6 on desktop).
+  - Zero external chart/analytics library dependencies.
+- State Performance & Derivation:
+  - All analytics derived directly in-memory via `useMemo` from root `tasks` state.
+  - Zero extra network requests issued for analytics calculations.
+  - Instantly updates upon task creation, modal editing, inline deletion, and drag-and-drop column transitions.
+- Preserved Full Kanban Workflow & Features:
+  - 3-column Kanban board remains intact.
+  - Native HTML5 drag-and-drop column transitions fully functional.
+  - Search and priority/status filtering preserved.
+  - Task CRUD modal operational.
+- Strict Constraints Maintained:
+  - Zero backend or database files modified.
+  - Zero external state libraries (Redux, Zustand, React Query) or chart libraries added.
+  - Zero references to `_id` in codebase.
 - Verified Compilation & Linters:
-  - `npm run build` in `frontend/` passed in 1.50s with 0 errors.
+  - `npm run build` in `frontend/` passed in 1.25s with 0 errors.
   - `npm run lint` in `frontend/` passed with 0 errors.
   - `npm run build` in `backend/` passed with 0 errors.
-  - All 9 Phase 5D unit tests passed (search, filters, combined AND logic, modal validation, API failure handling).
-  - Live HTTP sequence verified for modal creation, editing, and deletion against PostgreSQL.
+  - All 6 Phase 6 unit tests passed (zero state, status counts, completion %, priority distribution sum, overdue logic, dynamic CRUD/DnD updates).
+  - Live HTTP overdue task creation, completion synchronization, and deletion verified against PostgreSQL.
 
 ## In Progress
-- Awaiting next instruction (Phase 6: TaskFlow Task Insights / Analytics Dashboard).
+- Awaiting next instruction (Phase 7: Task Tags, Labels & Category Management).
 
 ## Blocked
 - None.
 
 ## Known Limitations
-- Analytics dashboard (Task Insights) not yet implemented (scheduled for Phase 6).
-- Category tags not yet implemented (scheduled for Phase 7).
+- Category tags and search-by-tag not yet implemented (scheduled for Phase 7).
 
 ## Verification Status
 - Frontend TypeScript & Vite build: Passed (`tsc && vite build`).
 - Frontend ESLint: Passed (`eslint .` clean with 0 warnings/errors).
 - Backend NestJS build: Passed (`nest build`).
 - Database & Backend isolation: Confirmed 0 files touched in `backend/` or `prisma/`.
-- TaskModal Create: Verified creation with backend defaults and explicit properties.
-- TaskModal Edit: Verified title, status, priority, and due date edits persist.
-- Validation: Verified empty and whitespace-only titles rejected with inline error message.
-- Search & Filters: Verified case-insensitive title search, priority filter, status filter, and combined filters.
-- Drag-and-Drop: Fully functional across columns.
-- Delete: Verified task deletion.
+- Metrics Verification:
+  - Empty array returns 0 across all metrics with 0% completion rate (no NaN/divide-by-zero).
+  - Completion percentage computes accurately (`Math.round((completed / total) * 100)`).
+  - Priority distribution counts sum to total tasks (`low + medium + high === total`).
+  - Overdue logic verified: past due tasks with `TODO` or `IN_PROGRESS` are counted; past due tasks with `DONE` are excluded.
+  - Dynamic updates verified on status changes, drag/drop, and CRUD mutations.
 
 ## Next Recommended Action
-Proceed to Phase 6: Task Insights / Analytics Dashboard (total tasks, completion rate, overdue tasks, in-progress count, priority distribution).
+Proceed to Phase 7: Task Tags, Labels & Category Management (category badge styling, tag filtering, and multi-tag support).
+
 
 
 

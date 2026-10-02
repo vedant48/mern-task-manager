@@ -296,3 +296,39 @@ Adopt Option 2. Consolidate create and edit workflows into a reusable `TaskModal
 - `TaskCard` no longer manages complex inline form state.
 - Empty states clearly communicate whether the board has zero tasks or no tasks matching active filters.
 
+---
+
+## Decision 11 — Client-Side Derived Analytics Dashboard (Task Insights) via Memoization
+
+### Context
+Phase 6 requires adding a comprehensive Task Insights analytics dashboard calculating total tasks, completed tasks, in-progress tasks, to-do tasks, completion rate (%), overdue tasks, and priority distribution (Low, Medium, High). The dashboard must be responsive, maintain a clean light design matching TaskFlow, avoid external charting/state libraries, and update dynamically across all CRUD and drag/drop mutations.
+
+### Options considered
+1. **Server-Side Analytics Endpoint (`GET /api/tasks/analytics`)**:
+   - Implement database aggregations via Prisma in the backend.
+   - *Pros*: Server calculates counts.
+   - *Cons*: Violates the strict constraint against modifying backend code in this phase, introduces extra HTTP round-trips and polling requirements, and adds unnecessary latency.
+2. **External Charting/Analytics Library (`recharts`, `chart.js`, `lucide-react`)**:
+   - Install an external visualization library.
+   - *Pros*: Pre-made graphical charts.
+   - *Cons*: Adds heavyweight dependencies, potential React 19 peer-dependency conflicts, and breaks the lightweight zero-dependency constraint.
+3. **Pure Client-Side In-Memory Derivation with `useMemo` & Tailwind UI (Selected)**:
+   - Compute metrics directly from the existing `tasks` state inside `calculateTaskMetrics` wrapped in `useMemo`.
+   - Implement clean HTML5/Tailwind cards, status badges, and an animated CSS progress bar for the completion rate.
+   - Enforce exact overdue logic: `task.dueDate && new Date(task.dueDate).getTime() < Date.now() && task.status !== 'DONE'`.
+
+### Decision
+Adopt Option 3. Derive all analytics client-side using `useMemo`, render them via responsive Tailwind CSS cards in `TaskInsights.tsx`, and preserve the existing backend boundaries intact.
+
+### Reason
+- Zero network overhead and zero database load.
+- Instant, synchronous updates whenever tasks are created, edited, deleted, or moved via drag-and-drop.
+- Guaranteed mathematical consistency: `priorityCounts.low + priorityCounts.medium + priorityCounts.high === totalTasks`.
+- Completed tasks (`status === 'DONE'`) are cleanly excluded from overdue counts regardless of their historical due date.
+
+### Consequences
+- No new packages, chart libraries, or backend endpoints are required.
+- The UI remains snappy and desktop-class with instant metric reactivity.
+- Future phases (such as tag filtering) can seamlessly feed into the same computation without refactoring.
+
+

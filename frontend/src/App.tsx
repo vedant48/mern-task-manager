@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getTasks, addTask, updateTask, deleteTask } from './api';
 import KanbanBoard from './components/KanbanBoard';
 import TaskFilterBar from './components/TaskFilterBar';
+import TaskInsights from './components/TaskInsights';
 import TaskModal from './components/TaskModal';
 import {
   Task,
@@ -252,6 +253,9 @@ export default function App() {
           totalCount={tasks.length}
           filteredCount={filteredTasks.length}
         />
+
+        {/* Task Insights Analytics Dashboard */}
+        <TaskInsights tasks={tasks} />
 
         {/* Board Content */}
         {loading ? (
