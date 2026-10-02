@@ -380,7 +380,7 @@ Phase 7.5 prepares the TaskFlow application for reliable production deployment o
    - Define all three tiers (`taskflow-db`, `taskflow-backend`, `taskflow-frontend`) in a single root-level `render.yaml`.
    - Use `rootDir` to isolate `backend` and `frontend` subprojects and trigger builds only on relevant file changes.
    - Inject database credentials securely using Render's `fromDatabase: { name: taskflow-db, property: connectionString }`.
-   - Implement dual migration triggers (`preDeployCommand: npx prisma migrate deploy` and `startCommand: npx prisma migrate deploy && npm run start:prod`) ensuring migrations apply regardless of Render plan tier (free vs paid).
+   - Implement startup migration trigger (`startCommand: npx prisma migrate deploy && npm run start:prod`) ensuring migrations apply safely on Render's Free Tier without requiring paid `preDeployCommand`.
    - Configure Render PostgreSQL SSL handling in `PrismaService` (`rejectUnauthorized: false` in production).
    - Configure frontend SPA client-side routing rewrites (`source: /*, destination: /index.html`).
    - Declare `VITE_API_URL` with `sync: false` to allow prompting/configuring public backend URL without hardcoding.

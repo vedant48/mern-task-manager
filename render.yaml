@@ -20,7 +20,6 @@ services:
     region: oregon
     rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build
-    preDeployCommand: npx prisma migrate deploy
     startCommand: npx prisma migrate deploy && npm run start:prod
     healthCheckPath: /api/tasks
     envVars:

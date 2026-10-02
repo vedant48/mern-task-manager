@@ -11,8 +11,7 @@ Phase 7.5 Complete: Render Deployment Preparation & Blueprint
     3. Frontend Vite Static Site (`taskflow-frontend`, static runtime, `rootDir: frontend`, `staticPublishPath: ./dist`).
   - Automated database migration and generation pipeline:
     - Build command: `npm install && npx prisma generate && npm run build`
-    - Pre-deploy command: `npx prisma migrate deploy`
-    - Start command: `npx prisma migrate deploy && npm run start:prod` (fallback guaranteeing migrations apply across all tiers)
+    - Start command: `npx prisma migrate deploy && npm run start:prod` (applies migrations at container boot before HTTP server starts, 100% compatible with Render Free Tier)
     - Health check endpoint: `/api/tasks`
   - Dynamic service linking via Render environment variables:
     - Injected `DATABASE_URL` directly from `taskflow-db` connectionString reference.
