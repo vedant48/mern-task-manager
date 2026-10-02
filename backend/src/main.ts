@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -7,6 +8,15 @@ async function bootstrap() {
 
   // Configure global API prefix so routes are mounted under /api (e.g. /api/tasks)
   app.setGlobalPrefix('api');
+
+  // Enforce validation globally across all incoming request payloads
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Configure CORS for local development and deployed frontend
   app.enableCors({

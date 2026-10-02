@@ -8,8 +8,11 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -21,26 +24,26 @@ export class TasksController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.tasksService.findOne(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() body: { title: string; completed?: boolean }) {
-    return this.tasksService.create(body);
+  async create(@Body() createTaskDto: CreateTaskDto) {
+    return this.tasksService.create(createTaskDto);
   }
 
   @Put(':id')
   async update(
-    @Param('id') id: string,
-    @Body() body: { title?: string; completed?: boolean },
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
   ) {
-    return this.tasksService.update(id, body);
+    return this.tasksService.update(id, updateTaskDto);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.tasksService.remove(id);
   }
 }

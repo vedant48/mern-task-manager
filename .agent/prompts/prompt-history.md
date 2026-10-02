@@ -298,3 +298,74 @@ Verification pass complete. System is completely verified, build passes, databas
 ### Next step
 Await user confirmation to proceed with commit or next development phase.
 
+## Prompt 7 — API Validation Hardening (DTOs, ValidationPipe, ParseUUIDPipe)
+
+### User instruction
+Implement the API validation hardening phase. Requirements:
+1. Add class-validator and class-transformer.
+2. Create DTOs: CreateTaskDto, UpdateTaskDto.
+3. CreateTaskDto: title required, non-empty string, trim/transform input appropriately.
+4. UpdateTaskDto: title optional, completed optional, validate both when provided.
+5. Enable NestJS global ValidationPipe with whitelist: true, forbidNonWhitelisted: true, transform: true.
+6. Keep controllers thin; validation belongs at HTTP boundary; business logic in TasksService.
+7. Handle invalid task IDs cleanly: invalid UUIDs return HTTP 400.
+8. Preserve existing API (GET/POST/PUT/DELETE /api/tasks).
+9. Do NOT modify the frontend.
+10. Do NOT modify Prisma schema or database structure.
+11. Do NOT add authentication, pagination, analytics, or unrelated features.
+12. Update .agent/status.md, .agent/prompts/decisions.md, .agent/prompts/prompt-history.md.
+13. Verify with actual tests/commands: valid POST succeeds, empty title rejected with 400, unknown fields rejected, valid PUT succeeds, invalid UUID returns 400, npm run build succeeds. Do not commit changes. Report files changed, commands executed, verification results, issues encountered.
+
+### Agent interpretation
+Harden the NestJS backend's HTTP request boundary using declarative validation and transformation. Install `class-validator` and `class-transformer`. Define `CreateTaskDto` and `UpdateTaskDto` with whitespace trimming and type constraints. Mount global `ValidationPipe` with strict whitelisting and unknown field rejection (`forbidNonWhitelisted: true`). Apply `ParseUUIDPipe` to path parameters in `TasksController` to catch malformed UUIDs at the controller layer and return HTTP 400. Execute real HTTP requests to verify all validation constraints and build health. Maintain strict isolation of frontend and database schema, and update `.agent/` documentation without committing.
+
+### Action taken
+1. Installed `class-validator` (0.15.1) and `class-transformer` (0.5.1) in `backend/package.json`.
+2. Created `backend/src/tasks/dto/create-task.dto.ts` with `@Transform` trimming, `@IsString`, and `@IsNotEmpty`.
+3. Created `backend/src/tasks/dto/update-task.dto.ts` with optional trimmed `title` and optional boolean `completed`.
+4. Updated `backend/src/main.ts` with `app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))`.
+5. Updated `backend/src/tasks/tasks.controller.ts` to bind DTOs and apply `new ParseUUIDPipe()` to `:id` path parameters on `findOne`, `update`, and `remove`.
+6. Updated `backend/src/tasks/tasks.service.ts` to accept `CreateTaskDto` and `UpdateTaskDto`.
+7. Executed `npm run build` cleanly (exit code 0).
+8. Tested live HTTP endpoints:
+   - Valid POST (`{"title": "Valid Hardened Task"}`) -> `201 Created` with UUID.
+   - Empty title POST (`{"title": ""}`) -> `400 Bad Request` (`["Title must not be empty"]`).
+   - Whitespace title POST (`{"title": "   "}`) -> `400 Bad Request` (`["Title must not be empty"]`).
+   - Unknown field POST (`{"title": "Valid", "extraField": "malicious"}`) -> `400 Bad Request` (`["property extraField should not exist"]`).
+   - Valid PUT (`{"completed": true, "title": "Updated"}`) -> `200 OK`.
+   - Invalid field type PUT (`{"completed": "not-bool"}`) -> `400 Bad Request` (`["Completed must be a boolean"]`).
+   - Invalid UUID GET/PUT/DELETE (`/api/tasks/not-a-valid-uuid`) -> `400 Bad Request` (`Validation failed (uuid is expected)`).
+   - Valid UUID not found (`/api/tasks/<valid-uuid-not-in-db>`) -> `404 Not Found`.
+9. Updated `.agent/status.md`, `.agent/prompts/decisions.md` (Decision 5), and `.agent/prompts/prompt-history.md`.
+10. Preserved frontend with zero modifications; no database schema changes; no git commits.
+
+### Files changed
+- `backend/package.json` (modified: added class-validator, class-transformer)
+- `backend/package-lock.json` (modified)
+- `backend/src/main.ts` (modified: global ValidationPipe configured)
+- `backend/src/tasks/tasks.controller.ts` (modified: ParseUUIDPipe, DTO binding)
+- `backend/src/tasks/tasks.service.ts` (modified: typed DTO parameters)
+- `backend/src/tasks/dto/create-task.dto.ts` (created)
+- `backend/src/tasks/dto/update-task.dto.ts` (created)
+- `.agent/status.md` (updated)
+- `.agent/prompts/decisions.md` (updated)
+- `.agent/prompts/prompt-history.md` (updated)
+
+### Verification
+- `npm run build`: Exit code 0.
+- Live HTTP tests against PostgreSQL:
+  - Valid POST: Succeeded (HTTP 201).
+  - Empty/whitespace title: Rejected (HTTP 400).
+  - Unknown fields: Rejected (HTTP 400).
+  - Valid PUT: Succeeded (HTTP 200).
+  - Invalid UUID: Rejected (HTTP 400).
+- Frontend isolation: `git status --short frontend` clean.
+- Database schema: `prisma/schema.prisma` and database migrations untouched.
+
+### Result
+API validation hardening successfully implemented and verified end-to-end.
+
+### Next step
+Await user instruction for frontend modernization (React + TypeScript Kanban migration) or next planned phase.
+
+

@@ -103,3 +103,35 @@ Provides complete stability and production maintainability, conforms to Prisma 7
 - All Prisma CLI commands (migrate, validate, studio) read configuration from `prisma.config.ts`.
 - Runtime queries execute through `pg.Pool` with connection reuse and pool lifecycle hooks in `PrismaService`.
 - Packages are strictly pinned without `^` to prevent unintended Prisma 8 upgrades.
+
+---
+
+## Decision 5 — Enforce Request Validation at the HTTP Boundary via DTOs, Global ValidationPipe, and ParseUUIDPipe
+
+### Context
+In Phase 2, request bodies and path parameters were loosely typed in controller handlers. Malformed payloads (e.g. empty titles, non-boolean completion flags, unknown malicious properties) or malformed UUID route parameters would either pass through unchecked or trigger database errors. A production-ready API requires strict validation and sanitization at the HTTP boundary before business logic or data layers are invoked.
+
+### Options considered
+1. **Manual Validation in Controllers/Services**: Write procedural checks (`if (!body.title) throw ...`) in controllers or services.
+   - *Pros*: No external libraries.
+   - *Cons*: Verbose, repetitive, inconsistent error formats, violates separation of concerns.
+2. **NestJS ValidationPipe with class-validator/class-transformer and ParseUUIDPipe (Selected)**:
+   - Define declarative DTO classes (`CreateTaskDto`, `UpdateTaskDto`) with decorators (`@IsNotEmpty`, `@IsString`, `@IsBoolean`, `@Transform`).
+   - Register a global `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, and `transform: true`.
+   - Apply `ParseUUIDPipe` to all `:id` route parameters.
+
+### Decision
+Adopt Option 2. Install `class-validator` and `class-transformer`, configure `app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))` in `main.ts`, bind `CreateTaskDto` and `UpdateTaskDto` to request bodies, and attach `new ParseUUIDPipe()` to `:id` parameters in `TasksController`.
+
+### Reason
+- Keeps controllers thin and declarative.
+- Rejects unexpected/malicious fields immediately with HTTP 400 (`forbidNonWhitelisted: true`).
+- Trims whitespace from user inputs reliably via `@Transform`.
+- Distinguishes syntax errors (malformed UUIDs -> HTTP 400 via `ParseUUIDPipe`) from domain errors (non-existent records -> HTTP 404 via `NotFoundException`).
+- Ensures zero database queries are executed for structurally invalid requests.
+
+### Consequences
+- Incoming HTTP requests must strictly adhere to DTO contracts.
+- Any unwhitelisted payload property causes an immediate 400 Bad Request.
+- Controllers remain purely HTTP orchestrators while services focus on database and business domain operations.
+

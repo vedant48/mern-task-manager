@@ -1,33 +1,34 @@
 # Project Status
 
 ## Current Phase
-Phase 2 Complete: Database Schema & Prisma 7 + PostgreSQL Integration Established
+Phase 3 Complete: API Validation Hardening (DTOs, Global ValidationPipe, and ParseUUIDPipe)
 
 ## Completed
-- Pinned Prisma CLI (`prisma: 7.10.0`), Prisma Client (`@prisma/client: 7.10.0`), and driver adapter (`@prisma/adapter-pg: 7.10.0`) in `backend/package.json` (strictly avoiding Prisma 8).
-- Implemented Prisma 7 configuration conventions via `backend/prisma.config.ts` for migration management and datasource URLs.
-- Created `backend/prisma/schema.prisma` with `Task` model:
-  - `id`: UUID string (`@id @default(uuid())`)
-  - `title`: String
-  - `completed`: Boolean (`@default(false)`)
-  - `createdAt`: DateTime (`@default(now())`)
-  - `updatedAt`: DateTime (`@updatedAt`)
-- Executed `npx prisma migrate dev --name init`, creating migration `20261002161001_init/migration.sql` and syncing PostgreSQL database `taskmanager`.
-- Created `backend/src/prisma/prisma.service.ts` using `PrismaPg` adapter with `pg.Pool`, handling `$connect` and `$disconnect`.
-- Created `backend/src/prisma/prisma.module.ts` exporting `PrismaService` globally.
-- Updated `backend/src/tasks/tasks.service.ts` and `tasks.controller.ts` with complete database-backed CRUD logic.
-- Created `backend/.env.example` without real credentials.
-- Verified TypeScript compilation and build: `npm run build` completed with zero errors.
-- Verified live HTTP endpoints against PostgreSQL:
-  - `POST /api/tasks` created task with UUID `id`, returning `201 Created`.
-  - `GET /api/tasks` retrieved created task from PostgreSQL.
-  - `PUT /api/tasks/:id` updated `completed` to `true`.
-  - `DELETE /api/tasks/:id` deleted record, returning `{"message": "Task deleted"}`.
-  - Verified count returned `0` after deletion.
-- Verified frontend remains 100% untouched (`git status --short frontend` clean).
+- Installed `class-validator` and `class-transformer` in `backend/package.json`.
+- Created `CreateTaskDto` (`backend/src/tasks/dto/create-task.dto.ts`):
+  - `title` is required (`@IsNotEmpty()`, `@IsString()`).
+  - Inputs are sanitized and trimmed appropriately (`@Transform()`).
+- Created `UpdateTaskDto` (`backend/src/tasks/dto/update-task.dto.ts`):
+  - `title` is optional, trimmed, non-empty when provided.
+  - `completed` is optional, boolean when provided (`@IsBoolean()`).
+- Enabled NestJS global `ValidationPipe` in `backend/src/main.ts` with:
+  - `whitelist: true`
+  - `forbidNonWhitelisted: true`
+  - `transform: true`
+- Integrated `ParseUUIDPipe` on all `:id` route parameters in `TasksController` (`findOne`, `update`, `remove`) returning HTTP 400 for malformed UUIDs.
+- Preserved thin controller pattern and encapsulated database logic in `TasksService`.
+- Preserved existing REST API contract: `GET /api/tasks`, `POST /api/tasks`, `PUT /api/tasks/:id`, `DELETE /api/tasks/:id`.
+- Maintained zero changes to `frontend/` and zero changes to Prisma schema or database tables.
+- Verified live HTTP validation behavior against PostgreSQL:
+  - Valid POST creates task with 201 Created.
+  - Empty or whitespace title is rejected with 400 Bad Request.
+  - Unknown payload fields are rejected with 400 Bad Request (`forbidNonWhitelisted: true`).
+  - Valid PUT updates title and completion status.
+  - Invalid UUID parameter is rejected with 400 Bad Request (`Validation failed (uuid is expected)`).
+  - `npm run build` succeeds cleanly with zero errors.
 
 ## In Progress
-- Awaiting next instruction (validation DTOs or frontend API client integration).
+- Awaiting next instruction (frontend TypeScript migration & API integration).
 
 ## Blocked
 - None.
@@ -37,11 +38,12 @@ Phase 2 Complete: Database Schema & Prisma 7 + PostgreSQL Integration Establishe
 - Advanced TaskFlow attributes (`priority`, `tags`, `dueDate`, `status`) will be introduced in subsequent model evolutions as instructed.
 
 ## Verification Status
-- Prisma schema validation: Passed (`npx prisma validate`).
-- Database migration: Applied successfully (`20261002161001_init`).
-- TypeScript build: Passed with zero errors (`npm run build`).
-- Live HTTP CRUD: Verified end-to-end against PostgreSQL database.
-- Frontend isolation: Verified untouched.
+- NestJS compilation & build: Passed (`npm run build`).
+- DTO validation & transformation: Verified live over HTTP.
+- UUID validation pipe: Verified live over HTTP.
+- Non-whitelisted field rejection: Verified live over HTTP.
+- Database & Prisma integrity: Unmodified and functioning.
+- Frontend isolation: Verified untouched (0 changes).
 
 ## Next Recommended Action
-Proceed to frontend modernization or validation DTO hardening according to the agentic roadmap.
+Proceed to frontend modernization (React + TypeScript, API client update to `task.id` and dynamic `VITE_API_URL`, Kanban UI evolution).
