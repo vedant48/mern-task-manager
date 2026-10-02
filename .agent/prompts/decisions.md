@@ -263,3 +263,36 @@ Adopt Option 2. Implement native HTML5 Drag and Drop across `TaskCard` and `Kanb
 - Backend status-completed synchronization (`DONE` <-> `completed: true`) works automatically.
 - Dropping into the current column produces zero network overhead.
 - Accidental dragging during inline card editing is fully disabled.
+
+---
+
+## Decision 10 — Unified Task CRUD Modal and Client-Side Search/Filter Architecture
+
+### Context
+In Phase 5B and 5C, task creation used an inline form at the top of the board, and card editing used an inline form within the card. As the application evolved, inline forms became cramped, duplicated logic, and complicated card dragging. Additionally, users needed client-side search and filtering capabilities (by title, priority, and status) without making redundant network requests per keystroke.
+
+### Options considered
+1. **Third-Party Modal & Table/Filter Libraries**:
+   - Use headless UI libraries (e.g. Radix UI, TanStack Table) for modals and filtering.
+   - *Pros*: Pre-built accessibility primitives.
+   - *Cons*: Adds external dependencies, increases bundle size, and violates strict phase constraints.
+2. **Unified Custom TaskModal & Client-Side Memoized FilterBar (Selected)**:
+   - Create a reusable `TaskModal` for both Create and Edit modes with title validation and inline API error handling.
+   - Replace the legacy `AddTask` form and inline card edit mode entirely with the modal.
+   - Implement `TaskFilterBar` with title search (case-insensitive) and priority/status dropdowns.
+   - Execute search and filtering in `App.tsx` via `useMemo` (zero API requests per keystroke) while preserving the 3-column Kanban board structure.
+
+### Decision
+Adopt Option 2. Consolidate create and edit workflows into a reusable `TaskModal`, eliminate obsolete inline forms, and implement client-side memoized search and filtering in `TaskFilterBar`.
+
+### Reason
+- Eliminates UI duplication and simplifies `TaskCard` presentation.
+- Provides immediate, responsive filtering without server round-trips or debouncing latency.
+- Guarantees that API failures during creation or editing keep the modal open with clear error explanations.
+- Fully respects the Kanban board structure and responsive layout.
+
+### Consequences
+- `AddTask.tsx` is completely removed; new tasks are created via the prominent "+ Add Task" button.
+- `TaskCard` no longer manages complex inline form state.
+- Empty states clearly communicate whether the board has zero tasks or no tasks matching active filters.
+

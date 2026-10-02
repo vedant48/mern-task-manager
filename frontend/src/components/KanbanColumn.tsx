@@ -7,9 +7,11 @@ interface KanbanColumnProps {
   title: string;
   tasks: Task[];
   accentColor: string;
+  isFiltered?: boolean;
   onUpdate: (id: string, updates: UpdateTaskInput) => Promise<void> | void;
   onDelete: (id: string) => Promise<void> | void;
   onDropTask: (taskId: string, targetStatus: TaskStatus) => Promise<void> | void;
+  onEdit: (task: Task) => void;
 }
 
 export default function KanbanColumn({
@@ -17,9 +19,11 @@ export default function KanbanColumn({
   title,
   tasks,
   accentColor,
+  isFiltered = false,
   onUpdate,
   onDelete,
   onDropTask,
+  onEdit,
 }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounter = useRef(0);
@@ -55,6 +59,10 @@ export default function KanbanColumn({
       await onDropTask(taskId, status);
     }
   };
+
+  const emptyMessage = isFiltered
+    ? `No matching tasks in ${title.toLowerCase()}`
+    : `No tasks in ${title.toLowerCase()}`;
 
   return (
     <div
@@ -96,7 +104,7 @@ export default function KanbanColumn({
                 : 'border-gray-200/60 text-gray-400'
             }`}
           >
-            {isDragOver ? `Drop task here to move to ${title}` : `No tasks in ${title.toLowerCase()}`}
+            {isDragOver ? `Drop task here to move to ${title}` : emptyMessage}
           </div>
         ) : (
           <>
@@ -106,6 +114,7 @@ export default function KanbanColumn({
                 task={task}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
+                onEdit={onEdit}
               />
             ))}
             {isDragOver && (

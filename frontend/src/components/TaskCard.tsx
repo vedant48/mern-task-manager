@@ -5,18 +5,11 @@ interface TaskCardProps {
   task: Task;
   onUpdate: (id: string, updates: UpdateTaskInput) => Promise<void> | void;
   onDelete: (id: string) => Promise<void> | void;
+  onEdit: (task: Task) => void;
 }
 
-export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
+export default function TaskCard({ task, onUpdate, onDelete, onEdit }: TaskCardProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-  const [editPriority, setEditPriority] = useState<TaskPriority>(task.priority);
-  const [editDueDate, setEditDueDate] = useState(
-    task.dueDate ? task.dueDate.slice(0, 10) : ''
-  );
-  const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('text/plain', task.id);
@@ -30,23 +23,6 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
   const handleDragEnd = () => {
     setIsDragging(false);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editTitle.trim()) return;
-    setIsSubmitting(true);
-    try {
-      await onUpdate(task.id, {
-        title: editTitle.trim(),
-        priority: editPriority,
-        dueDate: editDueDate ? new Date(editDueDate).toISOString() : null,
-        status: editStatus,
-      });
-      setIsEditing(false);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleStatusChange = async (newStatus: TaskStatus) => {
@@ -78,92 +54,9 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
     }
   };
 
-  if (isEditing) {
-    return (
-      <form
-        onSubmit={handleSave}
-        className="bg-white p-3 rounded-lg border border-blue-200 shadow-sm space-y-2.5 text-sm"
-      >
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Title
-          </label>
-          <input
-            type="text"
-            className="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            required
-            autoFocus
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Status
-            </label>
-            <select
-              value={editStatus}
-              onChange={(e) => setEditStatus(e.target.value as TaskStatus)}
-              className="w-full border rounded px-2 py-1 text-xs bg-white"
-            >
-              <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="DONE">Done</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">
-              Priority
-            </label>
-            <select
-              value={editPriority}
-              onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
-              className="w-full border rounded px-2 py-1 text-xs bg-white"
-            >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Due Date
-          </label>
-          <input
-            type="date"
-            value={editDueDate}
-            onChange={(e) => setEditDueDate(e.target.value)}
-            className="w-full border rounded px-2 py-1 text-xs"
-          />
-        </div>
-
-        <div className="flex justify-end gap-1.5 pt-1">
-          <button
-            type="button"
-            onClick={() => setIsEditing(false)}
-            className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium cursor-pointer"
-          >
-            Save
-          </button>
-        </div>
-      </form>
-    );
-  }
-
   return (
     <div
-      draggable={!isEditing}
+      draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       data-testid={`task-card-${task.id}`}
@@ -186,9 +79,9 @@ export default function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
             type="button"
             draggable={false}
             onDragStart={(e) => e.preventDefault()}
-            onClick={() => setIsEditing(true)}
+            onClick={() => onEdit(task)}
             title="Edit task"
-            className="text-gray-400 hover:text-gray-600 p-1 text-xs rounded hover:bg-gray-100 cursor-pointer"
+            className="text-gray-400 hover:text-blue-600 p-1 text-xs rounded hover:bg-gray-100 cursor-pointer"
           >
             ✏️
           </button>
